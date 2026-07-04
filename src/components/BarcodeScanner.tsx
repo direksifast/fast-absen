@@ -223,8 +223,6 @@ export function BarcodeScanner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scanMode]);
 
-  const [demoOpen, setDemoOpen] = useState(false);
-
   return (
     <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
       <div className="px-6 py-4 border-b border-border flex flex-col md:flex-row md:items-center gap-4 justify-between">
@@ -311,70 +309,24 @@ export function BarcodeScanner({
             <button
               onClick={startCamera}
               disabled={disabled}
-              className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
               <Camera className="w-4 h-4" /> Aktifkan Kamera
             </button>
           ) : (
             <button
               onClick={stopCamera}
-              className="flex-1 flex items-center justify-center gap-2 bg-red-50 text-red-700 border border-red-200 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-red-100 transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-700 border border-red-200 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-red-100 transition-colors"
             >
               <CameraOff className="w-4 h-4" /> Matikan Kamera
             </button>
           )}
-          <button
-            onClick={() => setDemoOpen(true)}
-            disabled={disabled}
-            className="flex items-center justify-center gap-2 bg-secondary text-secondary-foreground border border-border px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-secondary/80 disabled:opacity-50 transition-colors"
-          >
-            <Eye className="w-4 h-4" /> Demo
-          </button>
         </div>
 
         <p className="text-xs text-muted-foreground text-center">
           {scanMode === "qr" ? "Arahkan barcode karyawan ke kamera. Scanner otomatis mendeteksi." : "Posisikan wajah Anda di tengah layar kamera. Scanner otomatis mendeteksi."}
         </p>
       </div>
-
-      {demoOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setDemoOpen(false)}>
-          <div className="bg-card rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-foreground">Simulasi Scan Barcode</h3>
-              <button onClick={() => setDemoOpen(false)} className="p-1 rounded-lg hover:bg-muted transition-colors"><X className="w-4 h-4" /></button>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">Pilih karyawan untuk simulasi scan:</p>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {employees.map((emp) => (
-                <button
-                  key={emp.id}
-                  onClick={() => { 
-                    if (targetEmployeeId && emp.id !== targetEmployeeId) {
-                      setError(`QR Code tidak cocok! Scan QR Code milik Anda sendiri (${targetEmployeeId}).`);
-                      setDemoOpen(false);
-                    } else {
-                      setError("");
-                      setDemoOpen(false); 
-                      // Provide a dummy location for demo purposes (e.g. Jakarta center)
-                      onScan(emp.id, undefined, { lat: -6.2088, lng: 106.8456 }); 
-                    }
-                  }}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
-                >
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0" style={{ background: emp.color }}>
-                    {emp.initials}
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-foreground">{emp.name}</div>
-                    <div className="text-xs text-muted-foreground font-mono">{emp.id}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
