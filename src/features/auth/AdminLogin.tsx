@@ -1,18 +1,24 @@
 import { useState } from "react";
 import { Lock, LogIn, AlertCircle } from "lucide-react";
+import { api } from "../../services/api";
 
 export function AdminLogin({ onLogin, onBack }: { onLogin: () => void; onBack: () => void }) {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // HARDCODED UNTUK SEMENTARA.
-    // Nanti diganti dengan Supabase Auth (email/password).
-    if (password === "admin123") {
+    setError("");
+    setLoading(true);
+    try {
+      await api.adminLogin(email, password);
       onLogin();
-    } else {
-      setError("Password salah! (Hint: admin123)");
+    } catch (err: any) {
+      setError(err.message || "Email atau password salah!");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -23,9 +29,21 @@ export function AdminLogin({ onLogin, onBack }: { onLogin: () => void; onBack: (
           <Lock className="w-6 h-6 text-primary" />
         </div>
         <h2 className="text-2xl font-bold text-center text-foreground mb-2">Login Admin</h2>
-        <p className="text-center text-muted-foreground text-sm mb-8">Masukkan password untuk mengakses panel admin FAST ABSEN.</p>
+        <p className="text-center text-muted-foreground text-sm mb-8">Masukkan email dan password untuk mengakses panel admin FAST ABSEN.</p>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-1">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              placeholder="admin@example.com"
+              required
+              autoFocus
+            />
+          </div>
           <div>
             <label className="block text-sm font-semibold text-foreground mb-1">Password</label>
             <input
@@ -34,7 +52,7 @@ export function AdminLogin({ onLogin, onBack }: { onLogin: () => void; onBack: (
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
               placeholder="••••••••"
-              autoFocus
+              required
             />
           </div>
 
@@ -47,10 +65,10 @@ export function AdminLogin({ onLogin, onBack }: { onLogin: () => void; onBack: (
 
           <button
             type="submit"
-            disabled={!password}
+            disabled={!email || !password || loading}
             className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            <LogIn className="w-4 h-4" /> Masuk Panel Admin
+            <LogIn className="w-4 h-4" /> {loading ? "Memeriksa..." : "Masuk Panel Admin"}
           </button>
         </form>
 

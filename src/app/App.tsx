@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ClipboardList, UserCheck, Shield, ChevronRight, Maximize, CheckCircle2, AlertCircle, XCircle } from "lucide-react";
 import { Employee, AppView, AttendanceRecord, LeaveRequest, LocationData } from "../types";
 import { api } from "../services/api";
+import { supabase } from "../services/supabase";
 import { getTodayStr, getNowTime, getCheckInStatus, timeToMinutes, minutesToTime, fetchAddressFromCoordinates } from "../utils";
 import { EmployeeView } from "../features/employee/EmployeeView";
 import { AdminView } from "../features/admin/AdminView";
@@ -49,7 +50,7 @@ export default function App() {
   const [toast, setToast] = useState<{ msg: string; type: "success" | "warning" | "error" } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load data on mount
+  // Load data on mount and subscribe to changes
   useEffect(() => {
     async function loadData() {
       setLoading(true);
@@ -62,6 +63,19 @@ export default function App() {
       setLoading(false);
     }
     loadData();
+
+    const channel = supabase.channel('app-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => {
+        api.getAttendance().then(setAttendance);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => {
+        api.getLeaveRequests().then(setLeaveRequests);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // API Sync happens locally per action now
@@ -91,9 +105,13 @@ export default function App() {
       if (existingIdx === -1) return;
       const rec = attendance[existingIdx];
       const updated = { ...rec, lemburIn: now, photoLemburIn: finalPhotoUrl, locationLemburIn: location };
-      api.saveAttendanceRecord(updated);
-      setAttendance((prev) => prev.map((r, i) => i === existingIdx ? updated : r));
-      setToast({ msg: `${emp.name} — Lembur dimulai pukul ${now} ✓`, type: "success" });
+      try {
+        await api.saveAttendanceRecord(updated);
+        setAttendance((prev) => prev.map((r, i) => i === existingIdx ? updated : r));
+        setToast({ msg: `${emp.name} — Lembur dimulai pukul ${now} ✓`, type: "success" });
+      } catch (e) {
+        setToast({ msg: "Gagal memproses lembur. Periksa koneksi internet.", type: "error" });
+      }
       return;
     }
 
@@ -101,9 +119,13 @@ export default function App() {
       if (existingIdx === -1) return;
       const rec = attendance[existingIdx];
       const updated = { ...rec, lemburOut: now, photoLemburOut: finalPhotoUrl, locationLemburOut: location };
-      api.saveAttendanceRecord(updated);
-      setAttendance((prev) => prev.map((r, i) => i === existingIdx ? updated : r));
-      setToast({ msg: `${emp.name} — Lembur selesai pukul ${now} 👋`, type: "success" });
+      try {
+        await api.saveAttendanceRecord(updated);
+        setAttendance((prev) => prev.map((r, i) => i === existingIdx ? updated : r));
+        setToast({ msg: `${emp.name} — Lembur selesai pukul ${now} 👋`, type: "success" });
+      } catch (e) {
+        setToast({ msg: "Gagal menyimpan data lembur. Periksa koneksi internet.", type: "error" });
+      }
       return;
     }
 
@@ -119,12 +141,16 @@ export default function App() {
         locationCheckIn: location,
         status,
       };
-      api.saveAttendanceRecord(newRecord);
-      setAttendance((prev) => [...prev, newRecord]);
-      if (status === "hadir") {
-        setToast({ msg: `${emp.name} — Check-in tepat waktu pukul ${now} ✓`, type: "success" });
-      } else {
-        setToast({ msg: `${emp.name} — Terlambat! Check-in pukul ${now}`, type: "warning" });
+      try {
+        await api.saveAttendanceRecord(newRecord);
+        setAttendance((prev) => [...prev, newRecord]);
+        if (status === "hadir") {
+          setToast({ msg: `${emp.name} — Check-in tepat waktu pukul ${now} ✓`, type: "success" });
+        } else {
+          setToast({ msg: `${emp.name} — Terlambat! Check-in pukul ${now}`, type: "warning" });
+        }
+      } catch (e) {
+        setToast({ msg: "Gagal check-in. Periksa koneksi internet Anda.", type: "error" });
       }
     } else {
       const rec = attendance[existingIdx];
@@ -143,38 +169,55 @@ export default function App() {
       }
 
       const updated = { ...rec, checkOut: now, photoCheckOut: finalPhotoUrl, locationCheckOut: location };
-      api.saveAttendanceRecord(updated);
-      setAttendance((prev) => prev.map((r, i) => i === existingIdx ? updated : r));
-      setToast({ msg: `${emp.name} — Pulang pukul ${now} 👋`, type: "success" });
+      try {
+        await api.saveAttendanceRecord(updated);
+        setAttendance((prev) => prev.map((r, i) => i === existingIdx ? updated : r));
+        setToast({ msg: `${emp.name} — Pulang pukul ${now} 👋`, type: "success" });
+      } catch (e) {
+        setToast({ msg: "Gagal check-out. Periksa koneksi internet Anda.", type: "error" });
+      }
     }
   }, [attendance, employees]);
 
-  const handleLeaveSubmit = (req: Omit<LeaveRequest, "id" | "status" | "submittedAt">) => {
+  const handleLeaveSubmit = async (req: Omit<LeaveRequest, "id" | "status" | "submittedAt">) => {
     const newReq: LeaveRequest = {
       ...req,
       id: `LR${Date.now()}`,
       status: "pending",
       submittedAt: new Date().toISOString(),
     };
-    api.saveLeaveRequest(newReq);
-    setLeaveRequests((prev) => [...prev, newReq]);
-  };
-
-  const handleApprove = (id: string) => {
-    const req = leaveRequests.find(r => r.id === id);
-    if (req) {
-      const updated = { ...req, status: "approved" as const };
-      api.saveLeaveRequest(updated);
-      setLeaveRequests((prev) => prev.map((r) => r.id === id ? updated : r));
+    try {
+      await api.saveLeaveRequest(newReq);
+      setLeaveRequests((prev) => [...prev, newReq]);
+      setToast({ msg: "Pengajuan izin berhasil dikirim", type: "success" });
+    } catch (e) {
+      setToast({ msg: "Gagal mengirim pengajuan izin", type: "error" });
     }
   };
 
-  const handleReject = (id: string) => {
+  const handleApprove = async (id: string) => {
+    const req = leaveRequests.find(r => r.id === id);
+    if (req) {
+      const updated = { ...req, status: "approved" as const };
+      try {
+        await api.saveLeaveRequest(updated);
+        setLeaveRequests((prev) => prev.map((r) => r.id === id ? updated : r));
+      } catch (e) {
+        setToast({ msg: "Gagal menyetujui izin", type: "error" });
+      }
+    }
+  };
+
+  const handleReject = async (id: string) => {
     const req = leaveRequests.find(r => r.id === id);
     if (req) {
       const updated = { ...req, status: "rejected" as const };
-      api.saveLeaveRequest(updated);
-      setLeaveRequests((prev) => prev.map((r) => r.id === id ? updated : r));
+      try {
+        await api.saveLeaveRequest(updated);
+        setLeaveRequests((prev) => prev.map((r) => r.id === id ? updated : r));
+      } catch (e) {
+        setToast({ msg: "Gagal menolak izin", type: "error" });
+      }
     }
   };
 

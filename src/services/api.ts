@@ -28,6 +28,12 @@ const toSnake = (obj: any): any => {
 
 // ─── API SUPABASE ───
 export const api = {
+  // --- Admin Auth ---
+  adminLogin: async (email: string, password: string): Promise<void> => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  },
+
   // --- Employees ---
   getEmployees: async (): Promise<Employee[]> => {
     const { data, error } = await supabase.from('employees').select('*');
@@ -37,24 +43,27 @@ export const api = {
   
   saveEmployee: async (emp: Employee): Promise<void> => {
     const { error } = await supabase.from('employees').upsert(toSnake(emp));
-    if (error) console.error("Error saveEmployee:", error);
+    if (error) { console.error("Error saveEmployee:", error); throw error; }
   },
 
   deleteEmployee: async (id: string): Promise<void> => {
     const { error } = await supabase.from('employees').delete().eq('id', id);
-    if (error) console.error("Error deleteEmployee:", error);
+    if (error) { console.error("Error deleteEmployee:", error); throw error; }
   },
 
   // --- Attendance ---
-  getAttendance: async (): Promise<AttendanceRecord[]> => {
-    const { data, error } = await supabase.from('attendance').select('*');
+  getAttendance: async (monthPrefix?: string): Promise<AttendanceRecord[]> => {
+    let query = supabase.from('attendance').select('*');
+    const filter = monthPrefix || new Date().toISOString().substring(0, 7);
+    query = query.like('date', `${filter}%`);
+    const { data, error } = await query;
     if (error) { console.error("Error getAttendance:", error); return []; }
     return toCamel(data);
   },
 
   saveAttendanceRecord: async (record: AttendanceRecord): Promise<void> => {
     const { error } = await supabase.from('attendance').upsert(toSnake(record));
-    if (error) console.error("Error saveAttendanceRecord:", error);
+    if (error) { console.error("Error saveAttendanceRecord:", error); throw error; }
   },
 
   // --- Leave Requests ---
@@ -66,7 +75,7 @@ export const api = {
 
   saveLeaveRequest: async (req: LeaveRequest): Promise<void> => {
     const { error } = await supabase.from('leave_requests').upsert(toSnake(req));
-    if (error) console.error("Error saveLeaveRequest:", error);
+    if (error) { console.error("Error saveLeaveRequest:", error); throw error; }
   },
 
   // --- Storage ---
