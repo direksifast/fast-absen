@@ -54,8 +54,18 @@ export const api = {
   // --- Attendance ---
   getAttendance: async (monthPrefix?: string): Promise<AttendanceRecord[]> => {
     let query = supabase.from('attendance').select('*');
-    const filter = monthPrefix || new Date().toISOString().substring(0, 7);
-    query = query.like('date', `${filter}%`);
+    
+    // Prefix format: YYYY-MM
+    const targetMonth = monthPrefix || new Date().toISOString().substring(0, 7);
+    const [year, month] = targetMonth.split('-').map(Number);
+    
+    const startDate = `${targetMonth}-01`;
+    // Get first day of NEXT month
+    const nextMonth = new Date(year, month, 1);
+    const nextMonthStr = nextMonth.toISOString().substring(0, 7) + '-01';
+    
+    query = query.gte('date', startDate).lt('date', nextMonthStr);
+    
     const { data, error } = await query;
     if (error) { console.error("Error getAttendance:", error); return []; }
     return toCamel(data);
