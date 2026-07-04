@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ClipboardList, UserCheck, BarChart3, FileText, Users, LogOut, Clock, AlertCircle, Coffee, UserX, AlertTriangle, Check, X, Camera, MapPin, Download, Trash2 } from "lucide-react";
+import { ClipboardList, UserCheck, BarChart3, FileText, Users, LogOut, Clock, AlertCircle, Coffee, UserX, AlertTriangle, Check, X, Camera, MapPin, Download, Trash2, Edit } from "lucide-react";
 import { AttendanceRecord, LeaveRequest, Employee, AttendanceStatus } from "../../types";
 import { StatusBadge, LEAVE_CONFIG, LEAVE_STATUS_CONFIG } from "../../components/StatusBadge";
 import { getTodayStr, formatDate, formatDateTime, calculateDurationMins, formatMinutesToDecimal } from "../../utils";
@@ -13,6 +13,7 @@ export function AdminView({
   onReject,
   onLogout,
   onAddEmployee,
+  onEditEmployee,
   onDeleteEmployee,
 }: {
   attendance: AttendanceRecord[];
@@ -22,6 +23,7 @@ export function AdminView({
   onReject: (id: string) => void;
   onLogout: () => void;
   onAddEmployee: (emp: Employee) => void;
+  onEditEmployee: (emp: Employee) => void;
   onDeleteEmployee: (id: string) => void;
 }) {
   const [tab, setTab] = useState<"today" | "all" | "leave" | "employees" | "recap">("today");
@@ -32,6 +34,11 @@ export function AdminView({
   const [newEmpId, setNewEmpId] = useState("");
   const [newEmpName, setNewEmpName] = useState("");
   const [newEmpRole, setNewEmpRole] = useState("");
+
+  const [editingEmp, setEditingEmp] = useState<Employee | null>(null);
+  const [editEmpName, setEditEmpName] = useState("");
+  const [editEmpRole, setEditEmpRole] = useState("");
+  const [editEmpDept, setEditEmpDept] = useState("");
 
   const [recapMonth, setRecapMonth] = useState(getTodayStr().substring(0, 7)); // YYYY-MM
 
@@ -67,6 +74,20 @@ export function AdminView({
     const color = "#1B3E7A"; // Placeholder color
     onAddEmployee({ id: newEmpId, name: newEmpName, department: "Umum", position: newEmpRole, initials, color });
     setNewEmpId(""); setNewEmpName(""); setNewEmpRole("");
+  };
+
+  const handleEditEmployeeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEmp) return;
+    const initials = editEmpName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+    onEditEmployee({
+      ...editingEmp,
+      name: editEmpName,
+      department: editEmpDept,
+      position: editEmpRole,
+      initials
+    });
+    setEditingEmp(null);
   };
 
   // Kalkulasi Rekapitulasi per Karyawan
@@ -625,17 +646,31 @@ export function AdminView({
                           <h4 className="font-semibold text-sm text-foreground truncate">{emp.name}</h4>
                           <p className="text-xs text-muted-foreground truncate">{emp.position} · {emp.id}</p>
                         </div>
-                        <button
-                          onClick={() => {
-                            if (window.confirm(`Yakin ingin menghapus ${emp.name}? Data absen terkait tidak akan terhapus namun profil tidak bisa login lagi.`)) {
-                              onDeleteEmployee(emp.id);
-                            }
-                          }}
-                          className="p-2 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-                          title="Hapus Karyawan"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => {
+                              setEditingEmp(emp);
+                              setEditEmpName(emp.name);
+                              setEditEmpRole(emp.position);
+                              setEditEmpDept(emp.department);
+                            }}
+                            className="p-2 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                            title="Edit Karyawan"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Yakin ingin menghapus ${emp.name}? Data absen terkait tidak akan terhapus namun profil tidak bisa login lagi.`)) {
+                                onDeleteEmployee(emp.id);
+                              }
+                            }}
+                            className="p-2 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                            title="Hapus Karyawan"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -655,6 +690,37 @@ export function AdminView({
             </div>
             <div className="p-4 bg-black">
               <img src={selectedPhoto.src} alt="Bukti Absen" className="w-full rounded-lg" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingEmp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setEditingEmp(null)}>
+          <div className="bg-card rounded-2xl overflow-hidden shadow-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-muted/30">
+              <span className="font-bold text-foreground">Edit Karyawan: {editingEmp.id}</span>
+              <button onClick={() => setEditingEmp(null)} className="p-1 hover:bg-black/5 rounded-full"><X className="w-5 h-5 text-muted-foreground" /></button>
+            </div>
+            <div className="p-6">
+              <form onSubmit={handleEditEmployeeSubmit} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">Nama Lengkap</label>
+                  <input value={editEmpName} onChange={e => setEditEmpName(e.target.value)} required className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">Departemen</label>
+                  <input value={editEmpDept} onChange={e => setEditEmpDept(e.target.value)} required className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">Jabatan / Posisi</label>
+                  <input value={editEmpRole} onChange={e => setEditEmpRole(e.target.value)} required className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div className="pt-4 flex gap-3">
+                  <button type="button" onClick={() => setEditingEmp(null)} className="flex-1 bg-muted text-muted-foreground font-semibold px-4 py-3 rounded-xl text-sm hover:bg-muted/80 transition-colors">Batal</button>
+                  <button type="submit" className="flex-1 bg-primary text-primary-foreground font-semibold px-4 py-3 rounded-xl text-sm hover:bg-primary/90 transition-colors">Simpan Perubahan</button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

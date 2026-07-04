@@ -274,6 +274,15 @@ export default function App() {
             await api.saveEmployee(emp);
             setEmployees((prev) => [...prev, emp]);
           }}
+          onEditEmployee={async (emp) => {
+            try {
+              await api.saveEmployee(emp);
+              setEmployees((prev) => prev.map(e => e.id === emp.id ? emp : e));
+              setToast({ msg: "Data karyawan berhasil diperbarui", type: "success" });
+            } catch (e) {
+              setToast({ msg: "Gagal memperbarui data karyawan", type: "error" });
+            }
+          }}
           onDeleteEmployee={async (id) => {
             await api.deleteEmployee(id);
             setEmployees((prev) => prev.filter(emp => emp.id !== id));
