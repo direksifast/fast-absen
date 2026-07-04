@@ -55,14 +55,17 @@ export const api = {
   getAttendance: async (monthPrefix?: string): Promise<AttendanceRecord[]> => {
     let query = supabase.from('attendance').select('*');
     
-    // Prefix format: YYYY-MM
     const targetMonth = monthPrefix || new Date().toISOString().substring(0, 7);
-    const [year, month] = targetMonth.split('-').map(Number);
-    
     const startDate = `${targetMonth}-01`;
-    // Get first day of NEXT month
-    const nextMonth = new Date(year, month, 1);
-    const nextMonthStr = nextMonth.toISOString().substring(0, 7) + '-01';
+
+    const [yearStr, monthStr] = targetMonth.split('-');
+    let nextYear = parseInt(yearStr);
+    let nextMonthNum = parseInt(monthStr) + 1;
+    if (nextMonthNum > 12) {
+      nextMonthNum = 1;
+      nextYear += 1;
+    }
+    const nextMonthStr = `${nextYear}-${String(nextMonthNum).padStart(2, '0')}-01`;
     
     query = query.gte('date', startDate).lt('date', nextMonthStr);
     
