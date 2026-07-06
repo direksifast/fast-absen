@@ -218,14 +218,18 @@ export function EmployeeView({
   onLogout: () => void;
 }) {
   const [tab, setTab] = useState<"scan" | "lembur" | "barcode" | "izin" | "riwayat">("scan");
-  const [currentHour, setCurrentHour] = useState(new Date().getHours());
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentHour(new Date().getHours());
-    }, 60000);
+      setCurrentTime(new Date());
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  const currentMinsTotal = currentTime.getHours() * 60 + currentTime.getMinutes();
+  const startCheckOutMins = 17 * 60; // 17:00
+  const endCheckOutMins = 17 * 60 + 10; // 17:10
 
   const todayRecord = attendance.find((r) => r.date === getTodayStr() && r.employeeId === employee.id);
   const myLeave = leaveRequests.filter((r) => r.employeeId === employee.id);
@@ -242,7 +246,9 @@ export function EmployeeView({
     ? "text-emerald-600"
     : "text-blue-600";
 
-  const canScan = !todayRecord || (!todayRecord.checkOut && !!todayRecord.checkIn && currentHour >= 17);
+  const isPastCheckOutLimit = todayRecord && !todayRecord.checkOut && !!todayRecord.checkIn && currentMinsTotal > endCheckOutMins;
+
+  const canScan = !todayRecord || (!todayRecord.checkOut && !!todayRecord.checkIn && currentMinsTotal >= startCheckOutMins && currentMinsTotal <= endCheckOutMins);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -332,10 +338,17 @@ export function EmployeeView({
 
             <BarcodeScanner onScan={(id, photo, loc) => onScanSuccess(id, "absen", photo, loc)} disabled={!canScan} employees={employees} targetEmployeeId={employee.id} />
 
-            {!canScan && todayRecord?.checkIn && !todayRecord?.checkOut && (
+            {!canScan && todayRecord?.checkIn && !todayRecord?.checkOut && !isPastCheckOutLimit && (
               <div className="flex items-center gap-2 bg-blue-50 text-blue-700 rounded-xl p-4 text-sm font-semibold">
                 <Clock className="w-5 h-5 shrink-0" />
                 Tombol absen pulang akan aktif pada pukul 17:00.
+              </div>
+            )}
+
+            {isPastCheckOutLimit && (
+              <div className="flex items-center gap-2 bg-red-50 text-red-700 rounded-xl p-4 text-sm font-semibold">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                Batas waktu absen pulang (17:10) telah terlewat. Kehadiran Anda hari ini dianggap Tidak Hadir (Absen).
               </div>
             )}
 
