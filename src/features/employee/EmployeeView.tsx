@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import QRCode from "qrcode";
 import { LogOut, Clock, CheckCircle2, AlertCircle, FileText, QrCode, CalendarDays, Download, Printer, MapPin } from "lucide-react";
-import { Employee, AttendanceRecord, LeaveRequest, LeaveType } from "../../types";
+import { Employee, AttendanceRecord, LeaveRequest, LeaveType, AttendanceStatus } from "../../types";
 import { StatusBadge, LEAVE_CONFIG, LEAVE_STATUS_CONFIG } from "../../components/StatusBadge";
 import { BarcodeScanner } from "../../components/BarcodeScanner";
+import { api } from "../../services/api";
 import { getTodayStr, formatDate, formatDateTime } from "../../utils";
 
 function LeaveForm({ employee, onSubmit }: { employee: Employee; onSubmit: (req: Omit<LeaveRequest, "id" | "status" | "submittedAt">) => void }) {
@@ -247,6 +248,13 @@ export function EmployeeView({
     : "text-blue-600";
 
   const isPastCheckOutLimit = todayRecord && !todayRecord.checkOut && !!todayRecord.checkIn && currentMinsTotal > endCheckOutMins;
+
+  useEffect(() => {
+    if (isPastCheckOutLimit && todayRecord && todayRecord.status !== "absen") {
+      const updatedRecord = { ...todayRecord, status: "absen" as AttendanceStatus };
+      api.saveAttendanceRecord(updatedRecord).catch(console.error);
+    }
+  }, [isPastCheckOutLimit, todayRecord]);
 
   // Tombol scan nyala terus dari pagi sampai 17:10. Mati SETELAH 17:10.
   const canScan = !todayRecord || (!todayRecord.checkOut && !!todayRecord.checkIn && currentMinsTotal <= endCheckOutMins);
