@@ -248,7 +248,8 @@ export function EmployeeView({
 
   const isPastCheckOutLimit = todayRecord && !todayRecord.checkOut && !!todayRecord.checkIn && currentMinsTotal > endCheckOutMins;
 
-  const canScan = !todayRecord || (!todayRecord.checkOut && !!todayRecord.checkIn && currentMinsTotal >= startCheckOutMins && currentMinsTotal <= endCheckOutMins);
+  // Tombol scan nyala terus dari pagi sampai 17:10. Mati SETELAH 17:10.
+  const canScan = !todayRecord || (!todayRecord.checkOut && !!todayRecord.checkIn && currentMinsTotal <= endCheckOutMins);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -337,13 +338,6 @@ export function EmployeeView({
             </div>
 
             <BarcodeScanner onScan={(id, photo, loc) => onScanSuccess(id, "absen", photo, loc)} disabled={!canScan} employees={employees} targetEmployeeId={employee.id} />
-
-            {!canScan && todayRecord?.checkIn && !todayRecord?.checkOut && !isPastCheckOutLimit && (
-              <div className="flex items-center gap-2 bg-blue-50 text-blue-700 rounded-xl p-4 text-sm font-semibold">
-                <Clock className="w-5 h-5 shrink-0" />
-                Tombol absen pulang akan aktif pada pukul 17:00.
-              </div>
-            )}
 
             {isPastCheckOutLimit && (
               <div className="flex items-center gap-2 bg-red-50 text-red-700 rounded-xl p-4 text-sm font-semibold">
