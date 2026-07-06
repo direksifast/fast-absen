@@ -550,7 +550,7 @@ export function EmployeeView({
                     setNewPin("");
                     setConfirmPin("");
                   } catch (err: any) {
-                    setPinError("Gagal menyimpan ke database! Pastikan kolom PIN sudah dibuat di Supabase.");
+                    setPinError("Gagal menyimpan ke database! Error: " + (err?.message || err?.toString() || "Unknown error"));
                   }
                 }}
                 className="space-y-4"
