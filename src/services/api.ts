@@ -98,18 +98,9 @@ export const api = {
         return base64Data; // Already a URL or raw string
       }
       
-      const [header, base64] = base64Data.split(',');
-      if (!base64) return base64Data;
-      
-      const byteString = atob(base64);
-      const mimeString = header.split(':')[1].split(';')[0];
-      
-      const ab = new ArrayBuffer(byteString.length);
-      const ia = new Uint8Array(ab);
-      for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
-      }
-      const blob = new Blob([ab], { type: mimeString });
+      const response = await fetch(base64Data);
+      const blob = await response.blob();
+      const mimeString = blob.type;
 
       const { data, error } = await supabase.storage
         .from('attendance-photos')

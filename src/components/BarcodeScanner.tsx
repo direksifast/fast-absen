@@ -184,7 +184,12 @@ export function BarcodeScanner({
                    isScanned = true;
                    detectingRef.current = false;
                    setScanning(false);
-                   const resultId = targetEmployeeId || employees[Math.floor(Math.random() * employees.length)].id;
+                   if (!targetEmployeeId) {
+                     setError("Wajib pilih nama karyawan terlebih dahulu sebelum Face Scan!");
+                     stopCamera();
+                     return;
+                   }
+                   const resultId = targetEmployeeId;
                    const photo = capturePhoto();
                    setTimeout(() => {
                      stopCamera();
