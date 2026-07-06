@@ -209,6 +209,7 @@ export function EmployeeView({
   onScanSuccess,
   onLeaveSubmit,
   onLogout,
+  onUpdateEmployee,
 }: {
   employee: Employee;
   attendance: AttendanceRecord[];
