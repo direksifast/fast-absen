@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ClipboardList, UserCheck, BarChart3, FileText, Users, LogOut, Clock, AlertCircle, Coffee, UserX, AlertTriangle, Check, X, Camera, MapPin, Download, Trash2, Edit } from "lucide-react";
+import { ClipboardList, UserCheck, BarChart3, FileText, Users, LogOut, Clock, AlertCircle, Coffee, UserX, AlertTriangle, Check, X, Camera, MapPin, Download, Trash2, Edit, KeyRound } from "lucide-react";
 import { AttendanceRecord, LeaveRequest, Employee, AttendanceStatus } from "../../types";
 import { StatusBadge, LEAVE_CONFIG, LEAVE_STATUS_CONFIG } from "../../components/StatusBadge";
 import { getTodayStr, formatDate, formatDateTime, calculateDurationMins, formatMinutesToDecimal } from "../../utils";
@@ -658,6 +658,17 @@ export function AdminView({
                             title="Edit Karyawan"
                           >
                             <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Yakin ingin mereset PIN untuk ${emp.name}? Karyawan akan diminta membuat PIN baru saat login.`)) {
+                                onEditEmployee({ ...emp, pin: "" });
+                              }
+                            }}
+                            className="p-2 text-muted-foreground hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-colors"
+                            title="Reset PIN"
+                          >
+                            <KeyRound className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => {

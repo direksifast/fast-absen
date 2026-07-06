@@ -10,6 +10,7 @@ export interface Employee {
   position: string;
   initials: string;
   color: string;
+  pin?: string;
 }
 
 export interface LocationData {

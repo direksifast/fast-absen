@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import QRCode from "qrcode";
-import { LogOut, Clock, CheckCircle2, AlertCircle, FileText, QrCode, CalendarDays, Download, Printer, MapPin } from "lucide-react";
+import { LogOut, Clock, CheckCircle2, AlertCircle, FileText, QrCode, CalendarDays, Download, Printer, MapPin, Shield, KeyRound, ChevronRight } from "lucide-react";
 import { Employee, AttendanceRecord, LeaveRequest, LeaveType, AttendanceStatus } from "../../types";
 import { StatusBadge, LEAVE_CONFIG, LEAVE_STATUS_CONFIG } from "../../components/StatusBadge";
 import { BarcodeScanner } from "../../components/BarcodeScanner";
@@ -217,9 +217,15 @@ export function EmployeeView({
   onScanSuccess: (empId: string, action?: "absen" | "lemburIn" | "lemburOut", photoData?: string, location?: any) => void;
   onLeaveSubmit: (req: Omit<LeaveRequest, "id" | "status" | "submittedAt">) => void;
   onLogout: () => void;
+  onUpdateEmployee: (emp: Employee) => void;
 }) {
-  const [tab, setTab] = useState<"scan" | "lembur" | "barcode" | "izin" | "riwayat">("scan");
+  const [tab, setTab] = useState<"scan" | "lembur" | "barcode" | "izin" | "riwayat" | "akun">("scan");
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  const [oldPin, setOldPin] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [pinError, setPinError] = useState("");
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -312,8 +318,8 @@ export function EmployeeView({
       {/* Tabs */}
       <div className="max-w-2xl mx-auto w-full px-4 pt-4">
         <div className="flex gap-1 bg-muted rounded-xl p-1 overflow-x-auto">
-          {(["scan","lembur","barcode","izin","riwayat"] as const).map((t) => {
-            const labels = { scan: "Absen", lembur: "Lembur", barcode: "Barcode", izin: "Pengajuan", riwayat: "Riwayat" };
+          {(["scan","lembur","barcode","izin","riwayat","akun"] as const).map((t) => {
+            const labels = { scan: "Absen", lembur: "Lembur", barcode: "Barcode", izin: "Pengajuan", riwayat: "Riwayat", akun: "Akun" };
             return (
               <button
                 key={t}
@@ -496,6 +502,113 @@ export function EmployeeView({
                   ))}
               </div>
             )}
+          </div>
+        )}
+
+        {tab === "akun" && (
+          <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-border flex items-center gap-3">
+              <Shield className="w-5 h-5 text-primary" />
+              <span className="font-semibold text-foreground">Pengaturan Keamanan</span>
+            </div>
+            <div className="p-6">
+              {!employee.pin ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                  <div className="flex gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                    <div>
+                      <p className="font-semibold text-amber-800 text-sm">PIN Belum Dibuat</p>
+                      <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                        Anda belum memiliki PIN. Silakan buat PIN 6 digit untuk mengamankan akun Anda. 
+                        Setelah dibuat, Anda wajib memasukkan PIN tersebut setiap kali masuk.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setPinError("");
+                  if (employee.pin && oldPin !== employee.pin) {
+                    setPinError("PIN Lama yang Anda masukkan salah.");
+                    return;
+                  }
+                  if (newPin.length !== 6 || confirmPin.length !== 6) {
+                    setPinError("PIN harus terdiri dari 6 digit.");
+                    return;
+                  }
+                  if (newPin !== confirmPin) {
+                    setPinError("PIN Baru dan Konfirmasi PIN tidak cocok.");
+                    return;
+                  }
+
+                  onUpdateEmployee({ ...employee, pin: newPin });
+                  setOldPin("");
+                  setNewPin("");
+                  setConfirmPin("");
+                }}
+                className="space-y-4"
+              >
+                {employee.pin && (
+                  <div>
+                    <label className="block text-sm font-semibold text-foreground mb-1.5">PIN Lama</label>
+                    <input
+                      type="password"
+                      maxLength={6}
+                      inputMode="numeric"
+                      value={oldPin}
+                      onChange={(e) => setOldPin(e.target.value.replace(/[^0-9]/g, ''))}
+                      className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-sm font-mono tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-ring/30"
+                      placeholder="••••••"
+                      required
+                    />
+                  </div>
+                )}
+                
+                <div>
+                  <label className="block text-sm font-semibold text-foreground mb-1.5">{employee.pin ? "PIN Baru (6 Digit)" : "Buat PIN Baru (6 Digit)"}</label>
+                  <input
+                    type="password"
+                    maxLength={6}
+                    inputMode="numeric"
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value.replace(/[^0-9]/g, ''))}
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-sm font-mono tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-ring/30"
+                    placeholder="••••••"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-foreground mb-1.5">Konfirmasi PIN Baru</label>
+                  <input
+                    type="password"
+                    maxLength={6}
+                    inputMode="numeric"
+                    value={confirmPin}
+                    onChange={(e) => setConfirmPin(e.target.value.replace(/[^0-9]/g, ''))}
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-sm font-mono tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-ring/30"
+                    placeholder="••••••"
+                    required
+                  />
+                </div>
+
+                {pinError && (
+                  <p className="text-red-500 text-xs font-semibold">{pinError}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={!newPin || !confirmPin || (!!employee.pin && !oldPin)}
+                  className="w-full mt-4 bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  <KeyRound className="w-4 h-4" />
+                  {employee.pin ? "Ubah PIN" : "Simpan PIN Baru"}
+                </button>
+              </form>
+            </div>
           </div>
         )}
       </main>

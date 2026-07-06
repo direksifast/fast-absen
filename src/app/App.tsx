@@ -259,6 +259,12 @@ export default function App() {
           onScanSuccess={handleScan}
           onLeaveSubmit={handleLeaveSubmit}
           onLogout={() => { setCurrentEmployee(null); setView("login"); }}
+          onUpdateEmployee={async (emp) => {
+            await api.saveEmployee(emp);
+            setEmployees(prev => prev.map(e => e.id === emp.id ? emp : e));
+            setCurrentEmployee(emp);
+            setToast({ msg: "PIN berhasil diperbarui!", type: "success" });
+          }}
         />
       )}
 
@@ -297,8 +303,10 @@ export default function App() {
 // ─── Login Selection View (Di dalam App.tsx untuk saat ini) ──────────
 
 function LoginSelectionView({ onEmployeeLogin, onAdminLogin, employees }: { onEmployeeLogin: (id: string) => void; onAdminLogin: () => void; employees: Employee[] }) {
-  const [mode, setMode] = useState<"select" | "employee">("select");
+  const [mode, setMode] = useState<"select" | "employee" | "pin">("select");
   const [selectedEmp, setSelectedEmp] = useState<string>("");
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState("");
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
@@ -359,7 +367,7 @@ function LoginSelectionView({ onEmployeeLogin, onAdminLogin, employees }: { onEm
         {mode === "employee" && (
           <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-border flex items-center gap-3">
-              <button onClick={() => setMode("select")} className="p-1 rounded-lg hover:bg-muted transition-colors">
+              <button onClick={() => { setMode("select"); setSelectedEmp(""); }} className="p-1 rounded-lg hover:bg-muted transition-colors">
                 <ChevronRight className="w-4 h-4 rotate-180 text-muted-foreground" />
               </button>
               <span className="font-semibold text-foreground">Pilih Karyawan</span>
@@ -387,11 +395,108 @@ function LoginSelectionView({ onEmployeeLogin, onAdminLogin, employees }: { onEm
             <div className="px-4 pb-4">
               <button
                 disabled={!selectedEmp}
-                onClick={() => onEmployeeLogin(selectedEmp)}
+                onClick={() => {
+                  const emp = employees.find(e => e.id === selectedEmp);
+                  if (emp && emp.pin) {
+                    setMode("pin");
+                    setPinInput("");
+                    setPinError("");
+                  } else {
+                    onEmployeeLogin(selectedEmp);
+                  }
+                }}
                 className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors"
               >
                 Masuk
               </button>
+            </div>
+          </div>
+        )}
+
+        {mode === "pin" && (
+          <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-border flex items-center gap-3">
+              <button onClick={() => { setMode("employee"); setPinInput(""); setPinError(""); }} className="p-1 rounded-lg hover:bg-muted transition-colors">
+                <ChevronRight className="w-4 h-4 rotate-180 text-muted-foreground" />
+              </button>
+              <span className="font-semibold text-foreground">Masukkan PIN 6 Digit</span>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-center text-muted-foreground mb-6">
+                Masukkan PIN Anda untuk masuk sebagai <strong className="text-foreground">{employees.find(e => e.id === selectedEmp)?.name}</strong>
+              </p>
+              
+              <div className="flex justify-center gap-2 mb-4">
+                {[0, 1, 2, 3, 4, 5].map((index) => (
+                  <div 
+                    key={index}
+                    className={`w-10 h-12 rounded-lg border-2 flex items-center justify-center text-xl font-bold
+                      ${pinInput.length > index ? "border-primary bg-primary/10 text-primary" : "border-border bg-muted/50"}
+                    `}
+                  >
+                    {pinInput.length > index ? "•" : ""}
+                  </div>
+                ))}
+              </div>
+              
+              {pinError && <p className="text-red-500 text-xs text-center mb-4 font-semibold">{pinError}</p>}
+
+              <div className="grid grid-cols-3 gap-2 mt-6">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => {
+                      if (pinInput.length < 6) setPinInput(prev => prev + num);
+                      setPinError("");
+                    }}
+                    className="p-4 rounded-xl bg-muted/50 hover:bg-muted font-bold text-lg transition-colors"
+                  >
+                    {num}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setPinInput("")}
+                  className="p-4 rounded-xl text-red-500 hover:bg-red-50 font-bold text-sm transition-colors"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={() => {
+                    if (pinInput.length < 6) setPinInput(prev => prev + "0");
+                    setPinError("");
+                  }}
+                  className="p-4 rounded-xl bg-muted/50 hover:bg-muted font-bold text-lg transition-colors"
+                >
+                  0
+                </button>
+                <button
+                  onClick={() => {
+                    if (pinInput.length > 0) setPinInput(prev => prev.slice(0, -1));
+                    setPinError("");
+                  }}
+                  className="p-4 rounded-xl text-muted-foreground hover:bg-muted font-bold transition-colors flex items-center justify-center"
+                >
+                  <ChevronRight className="w-6 h-6 rotate-180" />
+                </button>
+              </div>
+
+              <div className="mt-6">
+                <button
+                  disabled={pinInput.length !== 6}
+                  onClick={() => {
+                    const emp = employees.find(e => e.id === selectedEmp);
+                    if (emp?.pin === pinInput) {
+                      onEmployeeLogin(selectedEmp);
+                    } else {
+                      setPinError("PIN yang Anda masukkan salah.");
+                      setPinInput("");
+                    }
+                  }}
+                  className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                >
+                  Konfirmasi PIN
+                </button>
+              </div>
             </div>
           </div>
         )}
