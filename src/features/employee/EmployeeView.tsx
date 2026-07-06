@@ -217,7 +217,7 @@ export function EmployeeView({
   onScanSuccess: (empId: string, action?: "absen" | "lemburIn" | "lemburOut", photoData?: string, location?: any) => void;
   onLeaveSubmit: (req: Omit<LeaveRequest, "id" | "status" | "submittedAt">) => void;
   onLogout: () => void;
-  onUpdateEmployee: (emp: Employee) => void;
+  onUpdateEmployee: (emp: Employee) => Promise<void>;
 }) {
   const [tab, setTab] = useState<"scan" | "lembur" | "barcode" | "izin" | "riwayat" | "akun">("scan");
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -528,7 +528,7 @@ export function EmployeeView({
               ) : null}
 
               <form 
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                   e.preventDefault();
                   setPinError("");
                   if (employee.pin && oldPin !== employee.pin) {
@@ -544,10 +544,14 @@ export function EmployeeView({
                     return;
                   }
 
-                  onUpdateEmployee({ ...employee, pin: newPin });
-                  setOldPin("");
-                  setNewPin("");
-                  setConfirmPin("");
+                  try {
+                    await onUpdateEmployee({ ...employee, pin: newPin });
+                    setOldPin("");
+                    setNewPin("");
+                    setConfirmPin("");
+                  } catch (err: any) {
+                    setPinError("Gagal menyimpan ke database! Pastikan kolom PIN sudah dibuat di Supabase.");
+                  }
                 }}
                 className="space-y-4"
               >
