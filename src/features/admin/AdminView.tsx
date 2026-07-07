@@ -117,7 +117,7 @@ export function AdminView({
       if (s === "absen") countAbsen++;
 
       if (r.checkIn && r.checkOut) {
-        totalWorkMins += calculateWorkDurationMins(r.checkIn, r.checkOut);
+        totalWorkMins += calculateWorkDurationMins(r.checkIn, r.checkOut, r.date);
       }
       if (r.lemburIn && r.lemburOut) {
         totalOvertimeMins += calculateDurationMins(r.lemburIn, r.lemburOut);

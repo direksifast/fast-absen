@@ -44,13 +44,16 @@ export function calculateDurationMins(startStr: string, endStr: string): number 
   return endMins - startMins;
 }
 
-export function calculateWorkDurationMins(startStr: string, endStr: string): number {
+export function calculateWorkDurationMins(startStr: string, endStr: string, dateStr?: string): number {
   if (!startStr || !endStr) return 0;
   let startMins = timeToMinutes(startStr);
   let endMins = timeToMinutes(endStr);
   
+  const d = dateStr ? new Date(dateStr + "T00:00:00") : new Date();
+  const isSaturday = d.getDay() === 6;
+
   const WORK_START = 9 * 60; // 09:00
-  const WORK_END = 17 * 60; // 17:00
+  const WORK_END = isSaturday ? 12 * 60 : 17 * 60; // 12:00 (Sabtu) / 17:00 (Biasa)
 
   // Jika datang sebelum jam 09:00, dihitung mulai 09:00
   if (startMins < WORK_START) {
