@@ -36,7 +36,7 @@ export const api = {
 
   // --- Employees ---
   getEmployees: async (): Promise<Employee[]> => {
-    const { data, error } = await supabase.from('employees').select('*');
+    const { data, error } = await supabase.from('employees').select('*').order('id', { ascending: true });
     if (error) { console.error("Error getEmployees:", error); return []; }
     return toCamel(data);
   },
