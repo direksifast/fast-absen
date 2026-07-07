@@ -219,10 +219,13 @@ export default function App() {
     }
   };
 
-  const handleApprove = async (id: string) => {
+  const handleApprove = async (id: string, newType?: LeaveType) => {
     const req = leaveRequests.find(r => r.id === id);
     if (req) {
       const updated = { ...req, status: "approved" as const };
+      if (newType) {
+        updated.type = newType;
+      }
       try {
         await api.saveLeaveRequest(updated);
         setLeaveRequests((prev) => prev.map((r) => r.id === id ? updated : r));

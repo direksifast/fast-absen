@@ -19,7 +19,7 @@ export function AdminView({
   attendance: AttendanceRecord[];
   leaveRequests: LeaveRequest[];
   employees: Employee[];
-  onApprove: (id: string) => void;
+  onApprove: (id: string, newType?: import("../../types").LeaveType) => void;
   onReject: (id: string) => void;
   onLogout: () => void;
   onAddEmployee: (emp: Employee) => void;
@@ -41,6 +41,7 @@ export function AdminView({
   const [editEmpDept, setEditEmpDept] = useState("");
 
   const [recapMonth, setRecapMonth] = useState(getTodayStr().substring(0, 7)); // YYYY-MM
+  const [leaveOverrides, setLeaveOverrides] = useState<Record<string, import("../../types").LeaveType>>({});
 
   const todayStr = getTodayStr();
   const todayRecords = attendance.filter((r) => r.date === todayStr);
@@ -520,16 +521,25 @@ export function AdminView({
                               <p className="text-sm text-foreground bg-muted rounded-lg px-3 py-2">{lr.reason}</p>
                               <p className="text-xs text-muted-foreground mt-1">Dikirim {formatDateTime(lr.submittedAt)}</p>
                             </div>
-                            <div className="flex flex-col gap-2 shrink-0">
+                            <div className="flex flex-col gap-2 shrink-0 w-32">
+                              <select 
+                                className="px-2 py-1.5 text-xs bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                value={leaveOverrides[lr.id] || lr.type}
+                                onChange={(e) => setLeaveOverrides(prev => ({...prev, [lr.id]: e.target.value as import("../../types").LeaveType}))}
+                              >
+                                <option value="izin">Izin</option>
+                                <option value="sakit">Sakit</option>
+                                <option value="cuti">Cuti</option>
+                              </select>
                               <button
-                                onClick={() => onApprove(lr.id)}
-                                className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 transition-colors"
+                                onClick={() => onApprove(lr.id, leaveOverrides[lr.id] || lr.type)}
+                                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 transition-colors"
                               >
                                 <Check className="w-3.5 h-3.5" /> Setuju
                               </button>
                               <button
                                 onClick={() => onReject(lr.id)}
-                                className="flex items-center gap-1.5 px-3 py-2 bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs font-semibold hover:bg-red-100 transition-colors"
+                                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs font-semibold hover:bg-red-100 transition-colors"
                               >
                                 <X className="w-3.5 h-3.5" /> Tolak
                               </button>
