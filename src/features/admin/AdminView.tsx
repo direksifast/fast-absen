@@ -26,7 +26,7 @@ export function AdminView({
   onEditEmployee: (emp: Employee) => void;
   onDeleteEmployee: (id: string) => void;
 }) {
-  const [tab, setTab] = useState<"today" | "all" | "leave" | "employees" | "recap">("today");
+  const [tab, setTab] = useState<"today" | "all" | "leave" | "employees" | "recap" | "recap_leave">("today");
   const [filterDate, setFilterDate] = useState(getTodayStr());
   const [filterStatus, setFilterStatus] = useState<AttendanceStatus | "all">("all");
   const [selectedPhoto, setSelectedPhoto] = useState<{ src: string, label: string } | null>(null);
@@ -125,6 +125,35 @@ export function AdminView({
     };
   });
 
+  // Kalkulasi Rekapitulasi Izin/Cuti
+  const recapLeaveData = employees.map((emp) => {
+    const approvedLeaves = leaveRequests.filter(
+      (l) => l.employeeId === emp.id && l.status === "approved"
+    );
+    let countIzin = 0;
+    let countSakit = 0;
+    let countCuti = 0;
+
+    approvedLeaves.forEach((l) => {
+      const start = new Date(l.startDate);
+      const end = new Date(l.endDate);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+      if (l.type === "izin") countIzin += diffDays;
+      if (l.type === "sakit") countSakit += diffDays;
+      if (l.type === "cuti") countCuti += diffDays;
+    });
+
+    return {
+      emp,
+      countIzin,
+      countSakit,
+      countCuti,
+      total: countIzin + countSakit + countCuti,
+    };
+  });
+
   const handleDownloadExcel = () => {
     const headers = ["ID", "Nama Karyawan", "Posisi", "Hadir", "Terlambat", "Izin", "Absen", "Total Jam Kerja", "Total Jam Lembur"];
     const rows = recapData.map(r => ({
@@ -164,6 +193,7 @@ export function AdminView({
               { key: "all",   label: "Semua Data",        Icon: BarChart3 },
               { key: "leave", label: `Pengajuan ${pendingLeave.length > 0 ? `(${pendingLeave.length})` : ""}`, Icon: FileText },
               { key: "recap", label: "Rekap Absen", Icon: Download },
+              { key: "recap_leave", label: "Rekap Izin/Cuti", Icon: FileText },
               { key: "employees", label: "Karyawan", Icon: Users },
             ] as const).map(({ key, label, Icon }) => (
               <button
@@ -194,8 +224,8 @@ export function AdminView({
             <button onClick={onLogout} className="p-2 rounded-xl hover:bg-white/10"><LogOut className="w-4 h-4" /></button>
           </header>
           <div className="flex gap-1 bg-muted p-1 mx-4 mt-4 rounded-xl overflow-x-auto">
-            {(["today","all","leave","recap"] as const).map((t) => {
-              const labels = { today: "Hari Ini", all: "Semua", leave: `Pengajuan${pendingLeave.length > 0 ? ` (${pendingLeave.length})` : ""}`, recap: "Rekap" };
+            {(["today","all","leave","recap","recap_leave"] as const).map((t) => {
+              const labels = { today: "Hari Ini", all: "Semua", leave: `Pengajuan${pendingLeave.length > 0 ? ` (${pendingLeave.length})` : ""}`, recap: "Rekap", recap_leave: "Izin/Cuti" };
               return (
                 <button key={t} onClick={() => setTab(t)} className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${tab === t ? "bg-card text-primary shadow-sm" : "text-muted-foreground"}`}>
                   {labels[t]}
@@ -596,6 +626,61 @@ export function AdminView({
                             <td className="px-4 py-3 text-center text-sm font-medium text-red-600">{row.countAbsen}</td>
                             <td className="px-4 py-3 text-center font-mono text-sm">{row.totalWorkHours} j</td>
                             <td className="px-4 py-3 text-center font-mono text-sm">{row.totalOvertimeHours} j</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Rekap Izin / Cuti Tab ── */}
+            {tab === "recap_leave" && (
+              <div className="space-y-6">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div>
+                    <h1 className="text-xl font-bold text-foreground">Rekap Izin, Sakit & Cuti</h1>
+                    <p className="text-sm text-muted-foreground">Menampilkan total hari berdasarkan pengajuan yang telah disetujui</p>
+                  </div>
+                </div>
+
+                <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                  <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-primary" />
+                    <span className="font-semibold text-foreground">
+                      Data Rekap Izin / Cuti
+                    </span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-muted">
+                          <th className="text-left px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Karyawan</th>
+                          <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Izin (Hari)</th>
+                          <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Sakit (Hari)</th>
+                          <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Cuti (Hari)</th>
+                          <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {recapLeaveData.map((row) => (
+                          <tr key={row.emp.id} className="hover:bg-muted/40 transition-colors">
+                            <td className="px-6 py-3">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ background: row.emp.color }}>
+                                  {row.emp.initials}
+                                </div>
+                                <div>
+                                  <span className="font-medium text-foreground block">{row.emp.name}</span>
+                                  <span className="text-xs text-muted-foreground">{row.emp.id}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-center text-sm font-medium text-amber-600">{row.countIzin}</td>
+                            <td className="px-4 py-3 text-center text-sm font-medium text-red-600">{row.countSakit}</td>
+                            <td className="px-4 py-3 text-center text-sm font-medium text-emerald-600">{row.countCuti}</td>
+                            <td className="px-4 py-3 text-center font-mono text-sm font-bold">{row.total}</td>
                           </tr>
                         ))}
                       </tbody>
