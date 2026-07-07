@@ -237,7 +237,7 @@ export function EmployeeView({
 
   const currentMinsTotal = currentTime.getHours() * 60 + currentTime.getMinutes();
   const startCheckOutMins = 17 * 60; // 17:00
-  const endCheckOutMins = 17 * 60 + 10; // 17:10
+  const endCheckOutMins = 17 * 60 + 30; // 17:30
 
   const todayRecord = attendance.find((r) => r.date === getTodayStr() && r.employeeId === employee.id);
   const myLeave = leaveRequests.filter((r) => r.employeeId === employee.id);
@@ -263,7 +263,7 @@ export function EmployeeView({
     }
   }, [isPastCheckOutLimit, todayRecord]);
 
-  // Tombol scan nyala terus dari pagi sampai 17:10. Mati SETELAH 17:10.
+  // Tombol scan nyala terus dari pagi sampai 17:30. Mati SETELAH 17:30.
   const canScan = !todayRecord || (!todayRecord.checkOut && !!todayRecord.checkIn && currentMinsTotal <= endCheckOutMins);
 
   return (
@@ -357,7 +357,7 @@ export function EmployeeView({
             {isPastCheckOutLimit && (
               <div className="flex items-center gap-2 bg-red-50 text-red-700 rounded-xl p-4 text-sm font-semibold">
                 <AlertCircle className="w-5 h-5 shrink-0" />
-                Batas waktu absen pulang (17:10) telah terlewat. Kehadiran Anda hari ini dianggap Tidak Hadir (Absen).
+                Batas waktu absen pulang (17:30) telah terlewat. Kehadiran Anda hari ini dianggap Tidak Hadir (Absen).
               </div>
             )}
 
