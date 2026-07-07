@@ -388,7 +388,7 @@ export function EmployeeView({
                       placeholder="Tuliskan alasan pulang cepat..."
                       value={pulangCepatReason}
                       onChange={e => setPulangCepatReason(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-amber-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      className="w-full px-3 py-2 text-sm bg-white text-slate-900 placeholder:text-slate-400 border border-amber-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-amber-400"
                       rows={2}
                     />
                     {pulangCepatReason.trim().length > 0 ? (
