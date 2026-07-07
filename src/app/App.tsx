@@ -190,7 +190,8 @@ export default function App() {
       
       const checkInMins = timeToMinutes(rec.checkIn || "09:00");
       const currentMins = timeToMinutes(now);
-      const requiredCheckOutMins = Math.max(17 * 60, checkInMins + 8 * 60);
+      const isSaturday = new Date().getDay() === 6;
+      const requiredCheckOutMins = isSaturday ? 12 * 60 : 17 * 60;
       
       if (action !== "pulang_cepat" && currentMins < requiredCheckOutMins) {
         setToast({ msg: `Belum waktunya pulang! Jam kerja Anda selesai pukul ${minutesToTime(requiredCheckOutMins)}`, type: "error" });
