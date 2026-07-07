@@ -44,6 +44,31 @@ export function calculateDurationMins(startStr: string, endStr: string): number 
   return endMins - startMins;
 }
 
+export function calculateWorkDurationMins(startStr: string, endStr: string): number {
+  if (!startStr || !endStr) return 0;
+  let startMins = timeToMinutes(startStr);
+  let endMins = timeToMinutes(endStr);
+  
+  const WORK_START = 9 * 60; // 09:00
+  const WORK_END = 17 * 60; // 17:00
+
+  // Jika datang sebelum jam 09:00, dihitung mulai 09:00
+  if (startMins < WORK_START) {
+    startMins = WORK_START;
+  }
+  
+  // Jika pulang setelah jam 17:00, dihitung mentok 17:00 (lembur dihitung terpisah)
+  if (endMins > WORK_END) {
+    endMins = WORK_END;
+  }
+
+  if (endMins <= startMins) {
+    return 0;
+  }
+
+  return endMins - startMins;
+}
+
 export function formatMinutesToDecimal(mins: number): string {
   // Return formatted with 2 decimal places max, e.g. 8.5 or 8.25
   return (mins / 60).toFixed(2).replace(/\.00$/, "");

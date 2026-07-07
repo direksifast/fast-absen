@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ClipboardList, UserCheck, BarChart3, FileText, Users, LogOut, Clock, AlertCircle, Coffee, UserX, AlertTriangle, Check, X, Camera, MapPin, Download, Trash2, Edit, KeyRound } from "lucide-react";
 import { AttendanceRecord, LeaveRequest, Employee, AttendanceStatus } from "../../types";
 import { StatusBadge, LEAVE_CONFIG, LEAVE_STATUS_CONFIG } from "../../components/StatusBadge";
-import { getTodayStr, formatDate, formatDateTime, calculateDurationMins, formatMinutesToDecimal } from "../../utils";
+import { getTodayStr, formatDate, formatDateTime, calculateDurationMins, calculateWorkDurationMins, formatMinutesToDecimal } from "../../utils";
 import * as XLSX from "xlsx";
 
 export function AdminView({
@@ -107,7 +107,7 @@ export function AdminView({
       if (r.status === "absen") countAbsen++;
 
       if (r.checkIn && r.checkOut) {
-        totalWorkMins += calculateDurationMins(r.checkIn, r.checkOut);
+        totalWorkMins += calculateWorkDurationMins(r.checkIn, r.checkOut);
       }
       if (r.lemburIn && r.lemburOut) {
         totalOvertimeMins += calculateDurationMins(r.lemburIn, r.lemburOut);
