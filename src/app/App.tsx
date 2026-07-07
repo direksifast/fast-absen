@@ -44,8 +44,28 @@ export default function App() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   
-  const [view, setView] = useState<AppView | "admin_login">("login");
-  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
+  const [view, setView] = useState<AppView | "admin_login">(() => {
+    return (localStorage.getItem("fast-absen-view") as AppView | "admin_login") || "login";
+  });
+  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(() => {
+    const saved = localStorage.getItem("fast-absen-emp");
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { return null; }
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("fast-absen-view", view);
+  }, [view]);
+
+  useEffect(() => {
+    if (currentEmployee) {
+      localStorage.setItem("fast-absen-emp", JSON.stringify(currentEmployee));
+    } else {
+      localStorage.removeItem("fast-absen-emp");
+    }
+  }, [currentEmployee]);
   
   const [toast, setToast] = useState<{ msg: string; type: "success" | "warning" | "error" } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,6 +78,10 @@ export default function App() {
       const atts = await api.getAttendance();
       const leaves = await api.getLeaveRequests();
       setEmployees(emps);
+      setCurrentEmployee((prev) => {
+        if (!prev) return null;
+        return emps.find((e) => e.id === prev.id) || null;
+      });
       setAttendance(atts);
       setLeaveRequests(leaves);
       setLoading(false);
