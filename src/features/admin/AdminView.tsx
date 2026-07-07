@@ -523,7 +523,7 @@ export function AdminView({
                             </div>
                             <div className="flex flex-col gap-2 shrink-0 w-32">
                               <select 
-                                className="px-2 py-1.5 text-xs bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                className="px-2 py-1.5 text-xs bg-muted text-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                                 value={leaveOverrides[lr.id] || lr.type}
                                 onChange={(e) => setLeaveOverrides(prev => ({...prev, [lr.id]: e.target.value as import("../../types").LeaveType}))}
                               >
