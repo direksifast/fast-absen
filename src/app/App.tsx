@@ -102,8 +102,13 @@ export default function App() {
     };
   }, []);
 
-  // API Sync happens locally per action now
-  const handleScan = useCallback(async (empId: string, action?: "absen" | "lemburIn" | "lemburOut", photoData?: string, location?: LocationData) => {
+  const handleScan = useCallback(async (
+    empId: string, 
+    action?: "absen" | "lemburIn" | "lemburOut" | "pulang_cepat", 
+    photoData?: string, 
+    location?: LocationData,
+    reason?: string
+  ) => {
     const emp = employees.find((e) => e.id === empId);
     if (!emp) {
       setToast({ msg: "Barcode tidak dikenali", type: "error" });
@@ -187,12 +192,18 @@ export default function App() {
       const currentMins = timeToMinutes(now);
       const requiredCheckOutMins = Math.max(17 * 60, checkInMins + 8 * 60);
       
-      if (currentMins < requiredCheckOutMins) {
+      if (action !== "pulang_cepat" && currentMins < requiredCheckOutMins) {
         setToast({ msg: `Belum waktunya pulang! Jam kerja Anda selesai pukul ${minutesToTime(requiredCheckOutMins)}`, type: "error" });
         return;
       }
 
-      const updated = { ...rec, checkOut: now, photoCheckOut: finalPhotoUrl, locationCheckOut: location };
+      const updated = { 
+        ...rec, 
+        checkOut: now, 
+        photoCheckOut: finalPhotoUrl, 
+        locationCheckOut: location,
+        ...(action === "pulang_cepat" && { isPulangCepat: true, pulangCepatReason: reason })
+      };
       try {
         await api.saveAttendanceRecord(updated);
         setAttendance((prev) => prev.map((r, i) => i === existingIdx ? updated : r));

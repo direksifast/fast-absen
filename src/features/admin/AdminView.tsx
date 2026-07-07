@@ -443,6 +443,12 @@ export function AdminView({
                                           </button>
                                         )}
                                       </div>
+                                      {rec.isPulangCepat && (
+                                        <div className="p-1.5 bg-amber-100 text-amber-800 rounded-md text-[10px] border border-amber-200 w-full">
+                                          <span className="font-bold flex items-center gap-1"><AlertTriangle className="w-3 h-3"/> Pulang Cepat</span>
+                                          <span className="italic block mt-0.5 whitespace-normal opacity-80">{rec.pulangCepatReason}</span>
+                                        </div>
+                                      )}
                                       {rec.locationCheckOut && (
                                         <a href={`https://maps.google.com/?q=${rec.locationCheckOut.lat},${rec.locationCheckOut.lng}`} target="_blank" rel="noreferrer" className="inline-flex items-start gap-1 text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded hover:bg-emerald-100 transition-colors w-full">
                                           <MapPin className="w-3 h-3 shrink-0 mt-0.5" />

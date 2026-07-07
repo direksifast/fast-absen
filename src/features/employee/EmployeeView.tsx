@@ -215,7 +215,7 @@ export function EmployeeView({
   attendance: AttendanceRecord[];
   leaveRequests: LeaveRequest[];
   employees: Employee[];
-  onScanSuccess: (empId: string, action?: "absen" | "lemburIn" | "lemburOut", photoData?: string, location?: any) => void;
+  onScanSuccess: (empId: string, action?: "absen" | "lemburIn" | "lemburOut" | "pulang_cepat", photoData?: string, location?: any, reason?: string) => void;
   onLeaveSubmit: (req: Omit<LeaveRequest, "id" | "status" | "submittedAt">) => void;
   onLogout: () => void;
   onUpdateEmployee: (emp: Employee) => Promise<void>;
@@ -227,6 +227,9 @@ export function EmployeeView({
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [pinError, setPinError] = useState("");
+
+  const [showPulangCepat, setShowPulangCepat] = useState(false);
+  const [pulangCepatReason, setPulangCepatReason] = useState("");
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -366,6 +369,43 @@ export function EmployeeView({
               <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 rounded-xl p-4 text-sm font-semibold">
                 <CheckCircle2 className="w-5 h-5 shrink-0" />
                 Kamu sudah absen pulang hari ini. Sampai besok!
+              </div>
+            )}
+
+            {!todayRecord?.checkOut && (
+              <div className="mt-6 border-t border-border pt-4">
+                <button
+                  onClick={() => setShowPulangCepat(!showPulangCepat)}
+                  className="text-sm font-semibold text-amber-600 hover:text-amber-700 underline underline-offset-4"
+                >
+                  Ada keperluan mendadak (Pulang Cepat)?
+                </button>
+                
+                {showPulangCepat && (
+                  <div className="mt-4 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                    <p className="text-sm text-amber-800 font-semibold mb-3">Formulir Pulang Cepat</p>
+                    <textarea 
+                      placeholder="Tuliskan alasan pulang cepat..."
+                      value={pulangCepatReason}
+                      onChange={e => setPulangCepatReason(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-amber-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      rows={2}
+                    />
+                    {pulangCepatReason.trim().length > 0 ? (
+                      <div className="bg-white rounded-lg p-2 border border-amber-200">
+                        <p className="text-xs text-center text-muted-foreground mb-2">Scan wajah untuk konfirmasi pulang cepat</p>
+                        <BarcodeScanner 
+                          onScan={(id, photo, loc) => onScanSuccess(id, "pulang_cepat", photo, loc, pulangCepatReason)} 
+                          disabled={false} 
+                          employees={employees} 
+                          targetEmployeeId={employee.id} 
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-xs text-amber-700 italic">Isi alasan terlebih dahulu untuk memunculkan scanner.</p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </>

@@ -36,6 +36,8 @@ export interface AttendanceRecord {
   locationLemburIn?: LocationData;
   locationLemburOut?: LocationData;
   status: AttendanceStatus;
+  isPulangCepat?: boolean;
+  pulangCepatReason?: string;
 }
 
 export interface LeaveRequest {
