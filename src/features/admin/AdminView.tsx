@@ -50,11 +50,20 @@ export function AdminView({
     return { emp, rec };
   });
 
+  const getDerivedStatus = (rec?: AttendanceRecord): AttendanceStatus => {
+    if (!rec) return "absen";
+    if ((rec.status === "hadir" || rec.status === "terlambat") && !rec.checkOut) {
+      return "belum_pulang";
+    }
+    return rec.status;
+  };
+
   const stats = {
-    hadir:     todayGrid.filter((x) => x.rec?.status === "hadir").length,
-    terlambat: todayGrid.filter((x) => x.rec?.status === "terlambat").length,
-    izin:      todayGrid.filter((x) => x.rec?.status === "izin").length,
-    absen:     todayGrid.filter((x) => !x.rec || x.rec.status === "absen").length,
+    hadir:     todayGrid.filter((x) => getDerivedStatus(x.rec) === "hadir").length,
+    terlambat: todayGrid.filter((x) => getDerivedStatus(x.rec) === "terlambat").length,
+    izin:      todayGrid.filter((x) => getDerivedStatus(x.rec) === "izin").length,
+    absen:     todayGrid.filter((x) => getDerivedStatus(x.rec) === "absen").length,
+    belum_pulang: todayGrid.filter((x) => getDerivedStatus(x.rec) === "belum_pulang").length,
     lembur:    todayGrid.filter((x) => x.rec?.lemburIn).length,
   };
 
@@ -62,7 +71,7 @@ export function AdminView({
 
   const filtered = attendance
     .filter((r) => r.date === filterDate)
-    .filter((r) => filterStatus === "all" || r.status === filterStatus)
+    .filter((r) => filterStatus === "all" || getDerivedStatus(r) === filterStatus)
     .sort((a, b) => a.employeeId.localeCompare(b.employeeId));
 
   const getEmp = (id: string) => employees.find((e) => e.id === id)!;
@@ -101,10 +110,11 @@ export function AdminView({
     let countAbsen = 0; // if status === absen
 
     records.forEach(r => {
-      if (r.status === "hadir") countHadir++;
-      if (r.status === "terlambat") countTelat++;
-      if (r.status === "izin") countIzin++;
-      if (r.status === "absen") countAbsen++;
+      const s = getDerivedStatus(r);
+      if (s === "hadir") countHadir++;
+      if (s === "terlambat") countTelat++;
+      if (s === "izin") countIzin++;
+      if (s === "absen") countAbsen++;
 
       if (r.checkIn && r.checkOut) {
         totalWorkMins += calculateWorkDurationMins(r.checkIn, r.checkOut);
@@ -247,9 +257,10 @@ export function AdminView({
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
                   {[
                     { key: "hadir",     label: "Hadir",     icon: <UserCheck className="w-5 h-5" />, color: "text-emerald-600 bg-emerald-100", val: stats.hadir },
+                    { key: "belum_pulang", label: "Blm Pulang", icon: <Clock className="w-5 h-5" />, color: "text-slate-600 bg-slate-100", val: stats.belum_pulang },
                     { key: "lembur",    label: "Lembur",    icon: <Clock className="w-5 h-5" />, color: "text-orange-600 bg-orange-100", val: stats.lembur },
                     { key: "terlambat", label: "Terlambat", icon: <AlertCircle className="w-5 h-5" />, color: "text-amber-600 bg-amber-100", val: stats.terlambat },
                     { key: "izin",      label: "Izin/Sakit",icon: <Coffee className="w-5 h-5" />, color: "text-blue-600 bg-blue-100", val: stats.izin },
@@ -273,7 +284,7 @@ export function AdminView({
                   </div>
                   <div className="divide-y divide-border">
                     {todayGrid.map(({ emp, rec }) => {
-                      const status: AttendanceStatus = rec ? rec.status : "absen";
+                      const status: AttendanceStatus = getDerivedStatus(rec);
                       return (
                         <div key={emp.id} className="px-6 py-3.5 flex items-center gap-4">
                           <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0" style={{ background: emp.color }}>
@@ -356,6 +367,7 @@ export function AdminView({
                   >
                     <option value="all">Semua Status</option>
                     <option value="hadir">Hadir</option>
+                    <option value="belum_pulang">Belum Pulang</option>
                     <option value="terlambat">Terlambat</option>
                     <option value="absen">Absen</option>
                     <option value="izin">Izin</option>
@@ -463,7 +475,7 @@ export function AdminView({
                                     </div>
                                   ) : <span className="font-mono text-xs text-muted-foreground text-center block">{"–"}</span>}
                                 </td>
-                                <td className="px-4 py-3 text-center"><StatusBadge status={rec.status} /></td>
+                                <td className="px-4 py-3 text-center"><StatusBadge status={getDerivedStatus(rec)} /></td>
                               </tr>
                             );
                           })}

@@ -1,5 +1,5 @@
 export type AppView = "login" | "employee" | "admin";
-export type AttendanceStatus = "hadir" | "terlambat" | "absen" | "izin";
+export type AttendanceStatus = "hadir" | "terlambat" | "absen" | "izin" | "belum_pulang";
 export type LeaveType = "izin" | "sakit" | "cuti";
 export type LeaveStatus = "pending" | "approved" | "rejected";
 

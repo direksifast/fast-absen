@@ -6,6 +6,7 @@ export const STATUS_CONFIG: Record<AttendanceStatus, { label: string; bg: string
   terlambat: { label: "Terlambat", bg: "bg-amber-50",    text: "text-amber-700",   dot: "bg-amber-500"   },
   absen:     { label: "Absen",     bg: "bg-red-50",      text: "text-red-700",     dot: "bg-red-500"     },
   izin:      { label: "Izin",      bg: "bg-blue-50",     text: "text-blue-700",    dot: "bg-blue-500"    },
+  belum_pulang: { label: "Belum Pulang", bg: "bg-slate-100", text: "text-slate-700", dot: "bg-slate-500" },
 };
 
 export function StatusBadge({ status }: { status: AttendanceStatus }) {
