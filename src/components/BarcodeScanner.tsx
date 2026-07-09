@@ -30,6 +30,7 @@ export function BarcodeScanner({
   const [faceBox, setFaceBox] = useState<{ x: number, y: number, width: number, height: number } | null>(null);
   const faceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null);
+  const [locating, setLocating] = useState(false);
 
   const capturePhoto = useCallback((): string | undefined => {
     if (!videoRef.current) return undefined;
@@ -67,23 +68,57 @@ export function BarcodeScanner({
 
   const startCamera = useCallback(async () => {
     setError(null);
+    setLocating(true);
     try {
-      // Wajibkan GPS
+      // Wajibkan GPS dengan akurasi tinggi
       let pos: GeolocationPosition;
       try {
         pos = await new Promise<GeolocationPosition>((resolve, reject) => {
           if (!navigator.geolocation) {
             reject(new Error("Browser tidak mendukung GPS."));
-          } else {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
+            return;
+          }
+
+          let bestPos: GeolocationPosition | null = null;
+          let watchId: number;
+
+          const timeoutId = setTimeout(() => {
+            if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
+            if (bestPos) {
+              resolve(bestPos);
+            } else {
+              reject(new Error("Waktu tunggu GPS habis."));
+            }
+          }, 15000); // Tunggu maksimal 15 detik
+
+          watchId = navigator.geolocation.watchPosition(
+            (position) => {
+              if (!bestPos || position.coords.accuracy < bestPos.coords.accuracy) {
+                bestPos = position;
+              }
+              // Jika akurasi cukup baik (<= 25 meter), langsung gunakan
+              if (position.coords.accuracy <= 25) {
+                clearTimeout(timeoutId);
+                navigator.geolocation.clearWatch(watchId);
+                resolve(position);
+              }
+            },
+            (error) => {
+              if (!bestPos) {
+                clearTimeout(timeoutId);
+                if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
+                reject(error);
+              }
+            },
+            {
               enableHighAccuracy: true,
               timeout: 10000,
               maximumAge: 0
-            });
-          }
+            }
+          );
         });
       } catch (geoErr: any) {
-        throw new Error("Akses lokasi (GPS) wajib diaktifkan untuk absen.");
+        throw new Error("Gagal mendapatkan lokasi GPS akurat. Pastikan akses lokasi diizinkan dan Anda berada di area terbuka.");
       }
       
       const locData: LocationData = { lat: pos.coords.latitude, lng: pos.coords.longitude };
@@ -214,8 +249,10 @@ export function BarcodeScanner({
       } else if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setError("Kamera diblokir oleh browser. Pastikan URL diawali dengan 'https://' bukan 'http://'.");
       } else {
-        setError(`Gagal mengakses kamera: ${msg}`);
+        setError(`${msg}`);
       }
+    } finally {
+      setLocating(false);
     }
   }, [onScan, scanMode, capturePhoto, employees, targetEmployeeId, stopCamera]);
 
@@ -313,10 +350,19 @@ export function BarcodeScanner({
           {!active ? (
             <button
               onClick={startCamera}
-              disabled={disabled}
+              disabled={disabled || locating}
               className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
-              <Camera className="w-4 h-4" /> Aktifkan Kamera
+              {locating ? (
+                <>
+                  <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  Mencari Lokasi GPS Akurat...
+                </>
+              ) : (
+                <>
+                  <Camera className="w-4 h-4" /> Aktifkan Kamera
+                </>
+              )}
             </button>
           ) : (
             <button
