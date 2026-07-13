@@ -260,15 +260,17 @@ export function EmployeeView({
 
   const isPastCheckOutLimit = todayRecord && !todayRecord.checkOut && !!todayRecord.checkIn && currentMinsTotal > endCheckOutMins;
 
+  const hasAutoAbsen = useRef(false);
   useEffect(() => {
-    if (isPastCheckOutLimit && todayRecord && todayRecord.status !== "absen") {
+    if (isPastCheckOutLimit && todayRecord && todayRecord.status !== "absen" && !hasAutoAbsen.current) {
+      hasAutoAbsen.current = true;
       const updatedRecord = { ...todayRecord, status: "absen" as AttendanceStatus };
       api.saveAttendanceRecord(updatedRecord).catch(console.error);
     }
   }, [isPastCheckOutLimit, todayRecord]);
 
-  // Tombol scan nyala terus dari pagi sampai 17:30. Mati SETELAH 17:30.
-  const canScan = !todayRecord || (!todayRecord.checkOut && !!todayRecord.checkIn && currentMinsTotal <= endCheckOutMins);
+  // Tombol scan hanya nyala untuk check-in atau saat waktu absen pulang sudah tiba (17:00 s/d 17:30)
+  const canScan = !todayRecord || (!todayRecord.checkOut && !!todayRecord.checkIn && currentMinsTotal >= startCheckOutMins && currentMinsTotal <= endCheckOutMins);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -357,6 +359,13 @@ export function EmployeeView({
             </div>
 
             <BarcodeScanner onScan={(id, photo, loc) => onScanSuccess(id, "absen", photo, loc)} disabled={!canScan} employees={employees} targetEmployeeId={employee.id} />
+
+            {!canScan && todayRecord && !todayRecord.checkOut && currentMinsTotal < startCheckOutMins && (
+              <div className="flex items-center gap-2 bg-amber-50 text-amber-700 rounded-xl p-4 text-sm font-semibold my-4">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                Belum waktunya absen pulang. Absen pulang baru bisa dilakukan mulai pukul {isSaturday ? "12:00" : "17:00"}.
+              </div>
+            )}
 
             {isPastCheckOutLimit && (
               <div className="flex items-center gap-2 bg-red-50 text-red-700 rounded-xl p-4 text-sm font-semibold">
