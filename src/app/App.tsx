@@ -3,7 +3,7 @@ import { ClipboardList, UserCheck, Shield, ChevronRight, Maximize, CheckCircle2,
 import { Employee, AppView, AttendanceRecord, LeaveRequest, LocationData } from "../types";
 import { api } from "../services/api";
 import { supabase } from "../services/supabase";
-import { getTodayStr, getNowTime, getCheckInStatus, timeToMinutes, minutesToTime, fetchAddressFromCoordinates } from "../utils";
+import { getTodayStr, getNowTime, getCheckInStatus, timeToMinutes, minutesToTime, fetchAddressFromCoordinates, syncServerTime } from "../utils";
 import { EmployeeView } from "../features/employee/EmployeeView";
 import { AdminView } from "../features/admin/AdminView";
 import { AdminLogin } from "../features/auth/AdminLogin";
@@ -74,6 +74,7 @@ export default function App() {
   useEffect(() => {
     async function loadData() {
       setLoading(true);
+      await syncServerTime();
       const emps = await api.getEmployees();
       const atts = await api.getAttendance();
       const leaves = await api.getLeaveRequests();
@@ -131,7 +132,10 @@ export default function App() {
     }
 
     if (action === "lemburIn") {
-      if (existingIdx === -1) return;
+      if (existingIdx === -1) {
+        setToast({ msg: "Gagal: Anda harus Absen Masuk terlebih dahulu sebelum lembur!", type: "error" });
+        return;
+      }
       const rec = attendance[existingIdx];
       const updated = { ...rec, lemburIn: now, photoLemburIn: finalPhotoUrl, locationLemburIn: location };
       try {
@@ -145,7 +149,10 @@ export default function App() {
     }
 
     if (action === "lemburOut") {
-      if (existingIdx === -1) return;
+      if (existingIdx === -1) {
+        setToast({ msg: "Gagal: Anda harus Absen Masuk terlebih dahulu!", type: "error" });
+        return;
+      }
       const rec = attendance[existingIdx];
       const updated = { ...rec, lemburOut: now, photoLemburOut: finalPhotoUrl, locationLemburOut: location };
       try {
@@ -159,6 +166,10 @@ export default function App() {
     }
 
     if (existingIdx === -1) {
+      if (action === "pulang_cepat") {
+        setToast({ msg: "Gagal: Anda harus Absen Masuk terlebih dahulu sebelum pulang cepat!", type: "error" });
+        return;
+      }
       // Check-in
       const status = getCheckInStatus(now);
       const newRecord: AttendanceRecord = {

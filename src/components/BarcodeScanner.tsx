@@ -89,7 +89,7 @@ export function BarcodeScanner({
             } else {
               reject(new Error("Waktu tunggu GPS habis."));
             }
-          }, 15000); // Tunggu maksimal 15 detik
+          }, 30000); // Tunggu maksimal 30 detik
 
           watchId = navigator.geolocation.watchPosition(
             (position) => {

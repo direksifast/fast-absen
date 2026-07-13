@@ -1,10 +1,23 @@
+let timeOffset = 0;
+
+export async function syncServerTime() {
+  try {
+    const res = await fetch("https://worldtimeapi.org/api/timezone/Asia/Jakarta");
+    const data = await res.json();
+    const serverTime = new Date(data.datetime).getTime();
+    timeOffset = serverTime - Date.now();
+  } catch (e) {
+    console.error("Gagal sinkronisasi waktu", e);
+  }
+}
+
 export function getTodayStr() {
-  return new Date().toISOString().split("T")[0];
+  return getServerTime().toISOString().split("T")[0];
 }
 
 // Simulasi Server Time
 export function getServerTime() {
-  return new Date();
+  return new Date(Date.now() + timeOffset);
 }
 
 export function getNowTime() {
@@ -49,7 +62,11 @@ export function calculateWorkDurationMins(startStr: string, endStr: string, date
   let startMins = timeToMinutes(startStr);
   let endMins = timeToMinutes(endStr);
   
-  const d = dateStr ? new Date(dateStr + "T00:00:00") : new Date();
+  if (endMins < startMins) {
+    endMins += 24 * 60;
+  }
+  
+  const d = dateStr ? new Date(dateStr + "T00:00:00") : getServerTime();
   const isSaturday = d.getDay() === 6;
 
   const WORK_START = 9 * 60; // 09:00
@@ -74,7 +91,7 @@ export function calculateWorkDurationMins(startStr: string, endStr: string, date
 
 export function formatMinutesToDecimal(mins: number): string {
   // Return formatted with 2 decimal places max, e.g. 8.5 or 8.25
-  return (mins / 60).toFixed(2).replace(/\.00$/, "");
+  return parseFloat((mins / 60).toFixed(2)).toString();
 }
 
 export function formatDate(dateStr: string) {
