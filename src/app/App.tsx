@@ -358,6 +358,35 @@ function LoginSelectionView({ onEmployeeLogin, onAdminLogin, employees }: { onEm
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState("");
 
+  useEffect(() => {
+    if (mode !== "pin") return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && pinInput.length === 6) {
+        const emp = employees.find(e => e.id === selectedEmp);
+        if (emp?.pin === pinInput) {
+          onEmployeeLogin(selectedEmp);
+        } else {
+          setPinError("PIN yang Anda masukkan salah.");
+          setPinInput("");
+        }
+      } else if (/^[0-9]$/.test(e.key)) {
+        if (pinInput.length < 6) {
+          setPinInput(prev => prev + e.key);
+          setPinError("");
+        }
+      } else if (e.key === "Backspace") {
+        if (pinInput.length > 0) {
+          setPinInput(prev => prev.slice(0, -1));
+          setPinError("");
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [mode, pinInput, selectedEmp, employees, onEmployeeLogin]);
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
       <button
