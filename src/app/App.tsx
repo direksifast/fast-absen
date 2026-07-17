@@ -7,6 +7,7 @@ import { getTodayStr, getNowTime, getCheckInStatus, timeToMinutes, minutesToTime
 import { EmployeeView } from "../features/employee/EmployeeView";
 import { AdminView } from "../features/admin/AdminView";
 import { AdminLogin } from "../features/auth/AdminLogin";
+import { InstallPwaButton } from "../components/InstallPwaButton";
 
 // ─── Scan Toast ────────────────────────────────────────────────────────────────
 
@@ -413,6 +414,7 @@ function LoginSelectionView({ onEmployeeLogin, onAdminLogin, employees }: { onEm
 
         {mode === "select" && (
           <div className="space-y-3">
+            <InstallPwaButton />
             <button
               onClick={() => setMode("employee")}
               className="w-full bg-card border border-border rounded-2xl p-5 flex items-center gap-4 hover:border-primary/40 hover:shadow-sm transition-all group"
