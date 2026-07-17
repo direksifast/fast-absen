@@ -43,7 +43,10 @@ export function InstallPwaButton() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      alert("Untuk menginstall: Klik icon install (layar komputer/HP dengan panah bawah) di pojok kanan atas address bar browser lu. Atau buka menu browser -> pilih 'Install App' / 'Tambahkan ke Layar Utama'.");
+      return;
+    }
     
     // Tampilkan prompt install
     deferredPrompt.prompt();
@@ -57,8 +60,8 @@ export function InstallPwaButton() {
     }
   };
 
-  if (isInstalled || !deferredPrompt) {
-    return null; // Sembunyikan tombol kalau sudah diinstal atau tidak didukung
+  if (isInstalled) {
+    return null; // Sembunyikan tombol kalau sudah diinstal
   }
 
   return (
