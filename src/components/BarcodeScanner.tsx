@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import * as faceapi from "face-api.js";
 import jsQR from "jsqr";
-import { Camera, CameraOff, X, AlertTriangle, QrCode, Scan, ScanFace, Eye } from "lucide-react";
+import { Camera, CameraOff, X, AlertTriangle, QrCode, Scan, ScanFace, Eye, Upload } from "lucide-react";
 import { Employee, LocationData } from "../types";
 
 export function BarcodeScanner({
@@ -31,6 +31,87 @@ export function BarcodeScanner({
   const faceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null);
   const [locating, setLocating] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement("canvas");
+        
+        // Resize to prevent jsQR from crashing on huge images
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 1000;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = (height / width) * maxDim;
+            width = maxDim;
+          } else {
+            width = (width / height) * maxDim;
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) return;
+        ctx.drawImage(img, 0, 0, width, height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: "dontInvert",
+        });
+
+        if (code) {
+          const val = code.data;
+          if (employees.find((emp) => emp.id === val)) {
+            if (targetEmployeeId && val !== targetEmployeeId) {
+              setError(`QR Code tidak cocok! Scan QR Code milik Anda sendiri (${targetEmployeeId}).`);
+            } else {
+              setError("");
+              setLocating(true);
+              let locData = currentLocation;
+              
+              if (!locData) {
+                try {
+                  const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                      enableHighAccuracy: true,
+                      timeout: 10000,
+                      maximumAge: 0
+                    });
+                  });
+                  locData = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                  setCurrentLocation(locData);
+                } catch (geoErr) {
+                  setError("Gagal mendapatkan lokasi GPS. Pastikan akses lokasi diizinkan.");
+                  setLocating(false);
+                  return;
+                }
+              }
+              
+              setLocating(false);
+              const photo = e.target?.result as string;
+              onScan(val, photo, locData);
+            }
+          } else {
+            setError("QR Code tidak valid atau karyawan tidak ditemukan.");
+          }
+        } else {
+          setError("Gagal membaca QR Code dari gambar. Pastikan gambar jelas dan tidak blur.");
+        }
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const capturePhoto = useCallback((): string | undefined => {
     if (!videoRef.current) return undefined;
@@ -346,24 +427,45 @@ export function BarcodeScanner({
           </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           {!active ? (
-            <button
-              onClick={startCamera}
-              disabled={disabled || locating}
-              className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors"
-            >
-              {locating ? (
+            <>
+              <button
+                onClick={startCamera}
+                disabled={disabled || locating}
+                className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              >
+                {locating ? (
+                  <>
+                    <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    Mencari Lokasi GPS...
+                  </>
+                ) : (
+                  <>
+                    <Camera className="w-4 h-4" /> Kamera
+                  </>
+                )}
+              </button>
+              
+              {scanMode === "qr" && (
                 <>
-                  <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                  Mencari Lokasi GPS Akurat...
-                </>
-              ) : (
-                <>
-                  <Camera className="w-4 h-4" /> Aktifkan Kamera
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={disabled || locating}
+                    className="w-full flex items-center justify-center gap-2 bg-muted text-foreground px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-muted/80 disabled:opacity-50 transition-colors border border-border"
+                  >
+                    <Upload className="w-4 h-4" /> Upload QR
+                  </button>
                 </>
               )}
-            </button>
+            </>
           ) : (
             <button
               onClick={stopCamera}
