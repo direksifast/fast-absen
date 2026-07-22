@@ -104,7 +104,7 @@ export function BarcodeScanner({
               setTimeout(() => {
                 setUploadScanData(null);
                 onScan(val, photo, locData);
-              }, 2500);
+              }, 3000);
             }
           } else {
             setError("QR Code tidak valid atau karyawan tidak ditemukan.");
@@ -418,15 +418,30 @@ export function BarcodeScanner({
           )}
 
           {uploadScanData && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-              <div className="relative w-full h-full max-w-sm flex items-center justify-center p-4">
-                <img src={uploadScanData.imageSrc} alt="Uploaded QR" className="max-w-full max-h-full rounded-xl object-contain shadow-2xl" />
-                <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-xl">
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-400 shadow-[0_0_15px_3px_rgba(52,211,153,0.8)] animate-[scan-vertical_1.5s_ease-in-out_infinite]" />
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md">
+              <div className="relative w-[80%] aspect-square max-w-sm flex items-center justify-center p-3 animate-in zoom-in duration-500">
+                {/* 4 Corner brackets */}
+                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-emerald-500 rounded-tl-lg shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-emerald-500 rounded-tr-lg shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-emerald-500 rounded-bl-lg shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-emerald-500 rounded-br-lg shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+                
+                {/* Image & Scanner */}
+                <div className="relative w-full h-full rounded-xl overflow-hidden bg-black shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+                  <img src={uploadScanData.imageSrc} alt="Uploaded QR" className="w-full h-full object-cover opacity-70 scale-105" />
+                  
+                  {/* Grid Overlay for cyber feel */}
+                  <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.15)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
+                  
+                  {/* Laser Scanner */}
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-400 shadow-[0_0_20px_5px_rgba(52,211,153,1)] animate-[scan-vertical_2s_linear_infinite] pointer-events-none">
+                     <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-t from-emerald-500/50 to-transparent -translate-y-full" />
+                  </div>
                 </div>
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/60 text-emerald-400 border border-emerald-500/50 px-5 py-2.5 rounded-full text-sm font-bold backdrop-blur-md whitespace-nowrap flex items-center gap-3 shadow-[0_0_20px_rgba(52,211,153,0.3)]">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Memindai QR Code...
+
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 text-emerald-400 border border-emerald-500/50 px-6 py-3 rounded-full text-sm font-bold backdrop-blur-md whitespace-nowrap flex items-center gap-3 shadow-[0_0_30px_rgba(52,211,153,0.4)]">
+                  <Scan className="w-5 h-5 animate-pulse" />
+                  Menganalisis QR...
                 </div>
               </div>
             </div>
@@ -440,11 +455,10 @@ export function BarcodeScanner({
             100% { transform: translateY(0); }
           }
           @keyframes scan-vertical {
-            0%   { top: 5%; opacity: 0; }
-            10%  { opacity: 1; }
-            50%  { top: 95%; opacity: 1; }
-            90%  { opacity: 1; }
-            100% { top: 5%; opacity: 0; }
+            0%   { top: 0%; opacity: 0; }
+            5%   { opacity: 1; }
+            95%  { top: 100%; opacity: 1; }
+            100% { top: 100%; opacity: 0; }
           }
         `}</style>
 
