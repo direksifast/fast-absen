@@ -32,6 +32,7 @@ export function BarcodeScanner({
   const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null);
   const [locating, setLocating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadScanData, setUploadScanData] = useState<{ imageSrc: string, val: string, photo: string, locData: LocationData | null } | null>(null);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -98,7 +99,12 @@ export function BarcodeScanner({
               
               setLocating(false);
               const photo = e.target?.result as string;
-              onScan(val, photo, locData);
+              
+              setUploadScanData({ imageSrc: photo, val, photo, locData });
+              setTimeout(() => {
+                setUploadScanData(null);
+                onScan(val, photo, locData);
+              }, 2500);
             }
           } else {
             setError("QR Code tidak valid atau karyawan tidak ditemukan.");
@@ -410,6 +416,21 @@ export function BarcodeScanner({
               </div>
             </div>
           )}
+
+          {uploadScanData && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+              <div className="relative w-full h-full max-w-sm flex items-center justify-center p-4">
+                <img src={uploadScanData.imageSrc} alt="Uploaded QR" className="max-w-full max-h-full rounded-xl object-contain shadow-2xl" />
+                <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-xl">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-400 shadow-[0_0_15px_3px_rgba(52,211,153,0.8)] animate-[scan-vertical_1.5s_ease-in-out_infinite]" />
+                </div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/60 text-emerald-400 border border-emerald-500/50 px-5 py-2.5 rounded-full text-sm font-bold backdrop-blur-md whitespace-nowrap flex items-center gap-3 shadow-[0_0_20px_rgba(52,211,153,0.3)]">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Memindai QR Code...
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <style>{`
@@ -417,6 +438,13 @@ export function BarcodeScanner({
             0%   { transform: translateY(0); }
             50%  { transform: translateY(190px); }
             100% { transform: translateY(0); }
+          }
+          @keyframes scan-vertical {
+            0%   { top: 5%; opacity: 0; }
+            10%  { opacity: 1; }
+            50%  { top: 95%; opacity: 1; }
+            90%  { opacity: 1; }
+            100% { top: 5%; opacity: 0; }
           }
         `}</style>
 
