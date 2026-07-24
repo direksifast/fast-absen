@@ -406,13 +406,64 @@ export function BarcodeScanner({
               </div>
             </div>
           )}
+          {/* Face scan animation overlay when searching but no face found yet */}
+          {scanning && scanMode === "face" && !faceBox && (
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
+              <div className="w-[60%] aspect-[3/4] max-w-sm rounded-[100px] border border-emerald-500/30 shadow-[inset_0_0_50px_rgba(16,185,129,0.2)] flex items-center justify-center relative overflow-hidden">
+                {/* Laser Scanner */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-400 shadow-[0_0_20px_2px_rgba(52,211,153,0.8)] animate-[scan-vertical_2s_linear_infinite]" />
+                <div className="absolute inset-0 border-2 border-dashed border-emerald-500/20 rounded-[100px] animate-[spin_10s_linear_infinite]" />
+                <div className="text-emerald-500/50 flex flex-col items-center gap-2">
+                   <ScanFace className="w-12 h-12 opacity-50 animate-pulse" />
+                   <span className="text-xs font-bold tracking-widest uppercase opacity-70">Arahkan Wajah</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {scanning && scanMode === "face" && faceBox && (
             <div 
-              className={`absolute border-4 rounded-xl transition-all duration-300 ease-out flex flex-col items-center pointer-events-none ${faceStatus === "green" ? "border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]" : "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]"}`}
+              className={`absolute transition-all duration-300 ease-out flex flex-col items-center pointer-events-none`}
               style={{ left: faceBox.x, top: faceBox.y, width: faceBox.width, height: faceBox.height }}
             >
-              <div className={`absolute -bottom-10 px-4 py-1.5 rounded-full text-xs font-bold text-white shadow-lg whitespace-nowrap transition-colors duration-300 ${faceStatus === "green" ? "bg-green-500" : "bg-red-500"}`}>
-                {faceStatus === "green" ? "Wajah Cocok!" : "Mendeteksi Wajah..."}
+              {/* Corner brackets */}
+              <div className={`absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 rounded-tl-xl transition-colors duration-300 ${faceStatus === "green" ? "border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]" : "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]"}`} />
+              <div className={`absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 rounded-tr-xl transition-colors duration-300 ${faceStatus === "green" ? "border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]" : "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]"}`} />
+              <div className={`absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 rounded-bl-xl transition-colors duration-300 ${faceStatus === "green" ? "border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]" : "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]"}`} />
+              <div className={`absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 rounded-br-xl transition-colors duration-300 ${faceStatus === "green" ? "border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]" : "border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]"}`} />
+              
+              {/* Grid Overlay */}
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:10px_10px] pointer-events-none rounded-xl overflow-hidden" />
+
+              {/* Scanning Laser inside box */}
+              {faceStatus !== "green" && (
+                <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+                  <div className={`absolute top-0 left-0 right-0 h-1 shadow-[0_0_20px_5px_rgba(16,185,129,0.8)] animate-[scan-vertical_1.5s_linear_infinite] pointer-events-none bg-emerald-400`}>
+                     <div className={`absolute top-0 left-0 right-0 h-16 bg-gradient-to-t to-transparent -translate-y-full from-emerald-500/30`} />
+                  </div>
+                </div>
+              )}
+
+              {/* Target Reticle (Center) */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8">
+                 <div className={`absolute inset-0 border-2 rounded-full animate-ping ${faceStatus === "green" ? "border-green-500/80" : "border-emerald-500/80"}`} />
+                 <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full ${faceStatus === "green" ? "bg-green-500" : "bg-emerald-500"}`} />
+              </div>
+
+              {/* Box Border Background */}
+              <div className={`absolute inset-0 border border-white/20 transition-colors duration-300 rounded-xl ${faceStatus === "green" ? "border-green-500/50 bg-green-500/10" : "border-emerald-500/50 bg-emerald-500/5"}`} />
+
+              {/* Status Badge */}
+              <div className={`absolute -bottom-12 px-5 py-2 rounded-full text-sm font-bold text-white shadow-[0_0_20px_rgba(0,0,0,0.5)] whitespace-nowrap transition-all duration-300 flex items-center gap-2 ${faceStatus === "green" ? "bg-green-500 scale-110 shadow-[0_0_20px_rgba(34,197,94,0.6)]" : "bg-black/80 border border-emerald-500/50 text-emerald-400 backdrop-blur-md"}`}>
+                {faceStatus === "green" ? (
+                  <>
+                    <ScanFace className="w-4 h-4" /> Wajah Cocok!
+                  </>
+                ) : (
+                  <>
+                    <Scan className="w-4 h-4 animate-spin" /> Menganalisis...
+                  </>
+                )}
               </div>
             </div>
           )}
