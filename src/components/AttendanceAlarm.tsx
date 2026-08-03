@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { BellRing, Volume2, VolumeX, CheckCircle2, Clock, X, AlertTriangle } from "lucide-react";
+import { BellRing, Volume2, CheckCircle2, X, Smartphone, Bell } from "lucide-react";
 import { AttendanceRecord, Employee } from "../types";
 import { getTodayStr, getServerTime } from "../utils";
 import { soundService } from "../utils/sound";
+import { NotificationService } from "../utils/notification";
 
 interface AttendanceAlarmProps {
   employee: Employee;
@@ -12,8 +13,10 @@ interface AttendanceAlarmProps {
 
 export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: AttendanceAlarmProps) {
   const [activeAlarm, setActiveAlarm] = useState<"in" | "out" | null>(null);
-  const [soundMuted, setSoundMuted] = useState(false);
   const [testingSound, setTestingSound] = useState<"in" | "out" | null>(null);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
+    NotificationService.getPermission()
+  );
   const hasTriggeredRef = useRef<{ inDate?: string; outDate?: string }>({});
 
   useEffect(() => {
@@ -43,8 +46,7 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
 
       const isSaturday = now.getDay() === 6;
 
-      // ─── 1. ALARM ABSEN MASUK (08:30 WIB s/d 09:00 WIB) ───
-      // Mulai muncul jam 08:30 pagi jika karyawan belum absen masuk
+      // ─── 1. ALARM ABSEN MASUK (08:30 WIB s/d 09:15 WIB) ───
       const ALARM_IN_START = 8 * 60 + 30; // 08:30
       const ALARM_IN_END = 9 * 60 + 15;   // 09:15
 
@@ -55,15 +57,17 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
         if (!isDismissed && hasTriggeredRef.current.inDate !== todayStr) {
           hasTriggeredRef.current.inDate = todayStr;
           setActiveAlarm("in");
-          if (!soundMuted) {
-            soundService.startAlarmLoop("in");
-          }
+          soundService.startAlarmLoop("in");
+
+          // Kirim Notifikasi Sistem ke Layar HP
+          NotificationService.sendSystemNotification("⏰ Peringatan Absen Masuk!", {
+            body: `Halo ${employee.name}, sudah jam 08:30 WIB! Segera lakukan absen masuk sebelum jam 09:00 WIB agar tidak terlambat.`,
+          });
           return;
         }
       }
 
       // ─── 2. ALARM ABSEN PULANG (17:00 WIB / Sabtu 12:00 WIB) ───
-      // Mulai muncul jam 17:00 sore (Sabtu 12:00) jika sudah absen masuk & belum check out
       const ALARM_OUT_START = isSaturday ? 12 * 60 : 17 * 60; // 17:00 (Sabtu 12:00)
       const ALARM_OUT_END = isSaturday ? 13 * 60 : 18 * 60;   // 18:00 (Sabtu 13:00)
 
@@ -74,9 +78,12 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
         if (!isDismissed && hasTriggeredRef.current.outDate !== todayStr) {
           hasTriggeredRef.current.outDate = todayStr;
           setActiveAlarm("out");
-          if (!soundMuted) {
-            soundService.startAlarmLoop("out");
-          }
+          soundService.startAlarmLoop("out");
+
+          // Kirim Notifikasi Sistem ke Layar HP
+          NotificationService.sendSystemNotification("🔔 Peringatan Absen Pulang!", {
+            body: `Halo ${employee.name}, sudah jam 17:00 WIB! Jam kerja hari ini telah selesai, silakan absen pulang.`,
+          });
           return;
         }
       }
@@ -85,7 +92,7 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
     checkAlarmTime();
     const interval = setInterval(checkAlarmTime, 5000);
     return () => clearInterval(interval);
-  }, [todayRecord, employee.id, soundMuted]);
+  }, [todayRecord, employee.id, employee.name]);
 
   const handleDismiss = () => {
     const todayStr = getTodayStr();
@@ -118,51 +125,88 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
     }
   };
 
+  const handleEnableNotification = async () => {
+    const granted = await NotificationService.requestPermission();
+    setNotifPermission(NotificationService.getPermission());
+    if (granted) {
+      NotificationService.sendSystemNotification("✅ Notifikasi HP Berhasil Aktif!", {
+        body: "Anda akan menerima notifikasi pengingat absen masuk (08:30) & absen pulang (17:00) langsung di layar HP.",
+      });
+    }
+  };
+
   return (
     <>
-      {/* Tombol Uji Coba Suara Alarm di UI (Widget Bawah Header) */}
-      <div className="bg-card border border-border rounded-2xl p-3.5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 my-2">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-            <BellRing className="w-5 h-5 animate-bounce" />
+      {/* Widget Alarm & Notifikasi di Dashboard Karyawan */}
+      <div className="bg-card border border-border rounded-2xl p-4 shadow-sm space-y-3 my-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
+              <BellRing className="w-5 h-5 animate-bounce" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                Alarm & Notifikasi HP Active
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Masuk: <strong className="text-foreground">08:30 WIB</strong> · Pulang: <strong className="text-foreground">17:00 WIB</strong>
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
-              Alarm Pengingat Otomatis Active
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
-            </p>
-            <p className="text-[11px] text-muted-foreground">
-              Masuk: <strong className="text-foreground">08:30 WIB</strong> · Pulang: <strong className="text-foreground">17:00 WIB</strong>
-            </p>
-          </div>
+
+          {notifPermission !== "granted" ? (
+            <button
+              onClick={handleEnableNotification}
+              className="w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-1.5 shrink-0"
+            >
+              <Smartphone className="w-4 h-4" /> Aktifkan Notifikasi Layar HP 🔔
+            </button>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-[11px] font-semibold border border-emerald-200 shrink-0">
+              <Bell className="w-3.5 h-3.5" /> Notifikasi HP Aktif
+            </span>
+          )}
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        {/* Tombol Uji Coba Suara */}
+        <div className="pt-2 border-t border-border flex items-center gap-2">
           <button
             onClick={() => handleTestSound("in")}
-            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center justify-center gap-1.5 ${
+            className={`flex-1 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center justify-center gap-1.5 ${
               testingSound === "in"
                 ? "bg-amber-500 text-white border-amber-600 animate-pulse"
                 : "bg-muted text-foreground border-border hover:bg-muted/80"
             }`}
-            title="Tes Suara Alarm Absen Masuk (08:30)"
           >
             <Volume2 className="w-3.5 h-3.5" />
-            {testingSound === "in" ? "Bunyi Alarm Masuk..." : "Tes Alarm Masuk"}
+            {testingSound === "in" ? "Bunyi..." : "Tes Nada Masuk"}
           </button>
 
           <button
             onClick={() => handleTestSound("out")}
-            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center justify-center gap-1.5 ${
+            className={`flex-1 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center justify-center gap-1.5 ${
               testingSound === "out"
                 ? "bg-emerald-600 text-white border-emerald-700 animate-pulse"
                 : "bg-muted text-foreground border-border hover:bg-muted/80"
             }`}
-            title="Tes Suara Alarm Absen Pulang (17:00)"
           >
             <Volume2 className="w-3.5 h-3.5" />
-            {testingSound === "out" ? "Bunyi Alarm Pulang..." : "Tes Alarm Pulang"}
+            {testingSound === "out" ? "Bunyi..." : "Tes Nada Pulang"}
           </button>
+
+          {notifPermission === "granted" && (
+            <button
+              onClick={() => {
+                NotificationService.sendSystemNotification("🔔 Tes Notifikasi Layar HP", {
+                  body: "Ini adalah contoh notifikasi pengingat absen yang akan muncul di layar HP Anda!",
+                });
+              }}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors flex items-center gap-1"
+            >
+              <Smartphone className="w-3.5 h-3.5" /> Tes Notif HP
+            </button>
+          )}
         </div>
       </div>
 
