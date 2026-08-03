@@ -53,21 +53,20 @@ export const api = {
 
   // --- Attendance ---
   getAttendance: async (monthPrefix?: string): Promise<AttendanceRecord[]> => {
-    let query = supabase.from('attendance').select('*');
+    let query = supabase.from('attendance').select('*').order('date', { ascending: false });
     
-    const targetMonth = monthPrefix || new Date().toISOString().substring(0, 7);
-    const startDate = `${targetMonth}-01`;
-
-    const [yearStr, monthStr] = targetMonth.split('-');
-    let nextYear = parseInt(yearStr);
-    let nextMonthNum = parseInt(monthStr) + 1;
-    if (nextMonthNum > 12) {
-      nextMonthNum = 1;
-      nextYear += 1;
+    if (monthPrefix && monthPrefix !== "all") {
+      const startDate = `${monthPrefix}-01`;
+      const [yearStr, monthStr] = monthPrefix.split('-');
+      let nextYear = parseInt(yearStr);
+      let nextMonthNum = parseInt(monthStr) + 1;
+      if (nextMonthNum > 12) {
+        nextMonthNum = 1;
+        nextYear += 1;
+      }
+      const nextMonthStr = `${nextYear}-${String(nextMonthNum).padStart(2, '0')}-01`;
+      query = query.gte('date', startDate).lt('date', nextMonthStr);
     }
-    const nextMonthStr = `${nextYear}-${String(nextMonthNum).padStart(2, '0')}-01`;
-    
-    query = query.gte('date', startDate).lt('date', nextMonthStr);
     
     const { data, error } = await query;
     if (error) { console.error("Error getAttendance:", error); return []; }
