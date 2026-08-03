@@ -4,6 +4,7 @@ import { LogOut, Clock, CheckCircle2, AlertCircle, FileText, QrCode, CalendarDay
 import { Employee, AttendanceRecord, LeaveRequest, LeaveType, AttendanceStatus } from "../../types";
 import { StatusBadge, LEAVE_CONFIG, LEAVE_STATUS_CONFIG } from "../../components/StatusBadge";
 import { BarcodeScanner } from "../../components/BarcodeScanner";
+import { AttendanceAlarm } from "../../components/AttendanceAlarm";
 import { api } from "../../services/api";
 import { getTodayStr, formatDate, formatDateTime } from "../../utils";
 
@@ -322,9 +323,14 @@ export function EmployeeView({
         )}
       </header>
 
-      {/* Tabs */}
+      {/* Alarm & Tabs */}
       <div className="max-w-2xl mx-auto w-full px-4 pt-4">
-        <div className="flex gap-1 bg-muted rounded-xl p-1 overflow-x-auto">
+        <AttendanceAlarm
+          employee={employee}
+          todayRecord={todayRecord}
+          onGoToScan={() => setTab("scan")}
+        />
+        <div className="flex gap-1 bg-muted rounded-xl p-1 overflow-x-auto mt-2">
           {(["scan","lembur","barcode","izin","riwayat","akun"] as const).map((t) => {
             const labels = { scan: "Absen", lembur: "Lembur", barcode: "Barcode", izin: "Pengajuan", riwayat: "Riwayat", akun: "Akun" };
             return (
