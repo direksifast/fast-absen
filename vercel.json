@@ -35,5 +35,19 @@
         }
       ]
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron-reminder?type=in",
+      "schedule": "30 1 * * 1-6"
+    },
+    {
+      "path": "/api/cron-reminder?type=out",
+      "schedule": "0 10 * * 1-5"
+    },
+    {
+      "path": "/api/cron-reminder?type=out",
+      "schedule": "0 5 * * 6"
+    }
   ]
 }

@@ -31,6 +31,7 @@ export default defineConfig({
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
+        importScripts: ['/custom-sw-push.js'],
       },
       manifest: {
         name: 'FAST ABSEN',

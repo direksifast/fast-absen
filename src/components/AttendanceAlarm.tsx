@@ -4,6 +4,7 @@ import { AttendanceRecord, Employee } from "../types";
 import { getTodayStr, getServerTime } from "../utils";
 import { soundService } from "../utils/sound";
 import { NotificationService } from "../utils/notification";
+import { registerPushNotification } from "../utils/pushSubscription";
 
 interface AttendanceAlarmProps {
   employee: Employee;
@@ -129,8 +130,11 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
     const granted = await NotificationService.requestPermission();
     setNotifPermission(NotificationService.getPermission());
     if (granted) {
+      // Register Cloud Push Subscription for server-side push notifications
+      await registerPushNotification(employee.id);
+
       NotificationService.sendSystemNotification("✅ Notifikasi HP Berhasil Aktif!", {
-        body: "Anda akan menerima notifikasi pengingat absen masuk (08:30) & absen pulang (17:00) langsung di layar HP.",
+        body: "Anda akan menerima notifikasi pengingat absen masuk (08:30) & absen pulang (17:00) langsung di layar HP meskipun aplikasi ditutup.",
       });
     }
   };
