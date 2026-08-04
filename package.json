@@ -4,7 +4,8 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "node scripts/generate-version.mjs && vite build",
+    "generate-version": "node scripts/generate-version.mjs",
     "dev": "vite --host"
   },
   "dependencies": {

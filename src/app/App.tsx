@@ -8,6 +8,7 @@ import { EmployeeView } from "../features/employee/EmployeeView";
 import { AdminView } from "../features/admin/AdminView";
 import { AdminLogin } from "../features/auth/AdminLogin";
 import { InstallPwaButton } from "../components/InstallPwaButton";
+import { VersionChecker } from "../components/VersionChecker";
 
 // ─── Scan Toast ────────────────────────────────────────────────────────────────
 
@@ -278,6 +279,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+      <VersionChecker />
       {toast && (
         <ScanToast
           message={toast.msg}
