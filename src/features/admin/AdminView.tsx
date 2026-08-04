@@ -3,6 +3,7 @@ import { ClipboardList, UserCheck, BarChart3, FileText, Users, LogOut, Clock, Al
 import { AttendanceRecord, LeaveRequest, Employee, AttendanceStatus } from "../../types";
 import { StatusBadge, LEAVE_CONFIG, LEAVE_STATUS_CONFIG } from "../../components/StatusBadge";
 import { getTodayStr, formatDate, formatDateTime, calculateDurationMins, calculateWorkDurationMins, formatMinutesToDecimal } from "../../utils";
+import { exportProfessionalExcel } from "../../utils/excelExport";
 import * as XLSX from "xlsx";
 
 export function AdminView({
@@ -166,23 +167,13 @@ export function AdminView({
   });
 
   const handleDownloadExcel = () => {
-    const headers = ["ID", "Nama Karyawan", "Posisi", "Hadir", "Terlambat", "Izin", "Absen", "Total Jam Kerja", "Total Jam Lembur"];
-    const rows = recapData.map(r => ({
-      "ID": r.emp.id,
-      "Nama Karyawan": r.emp.name,
-      "Posisi": r.emp.position,
-      "Hadir": r.countHadir,
-      "Terlambat": r.countTelat,
-      "Izin": r.countIzin,
-      "Absen": r.countAbsen,
-      "Total Jam Kerja": Number(r.totalWorkHours),
-      "Total Jam Lembur": Number(r.totalOvertimeHours)
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap Absen");
-    XLSX.writeFile(workbook, `Rekap_Absen_${recapMonth}.xlsx`);
+    exportProfessionalExcel({
+      recapMonth,
+      employees,
+      attendance,
+      leaveRequests,
+      recapData
+    });
   };
 
   return (
@@ -666,11 +657,17 @@ export function AdminView({
             {/* ── Rekap Izin / Cuti Tab ── */}
             {tab === "recap_leave" && (
               <div className="space-y-6">
-                <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
                     <h1 className="text-xl font-bold text-foreground">Rekap Izin, Sakit & Cuti</h1>
                     <p className="text-sm text-muted-foreground">Menampilkan total hari berdasarkan pengajuan yang telah disetujui</p>
                   </div>
+                  <button 
+                    onClick={handleDownloadExcel}
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors shrink-0"
+                  >
+                    <Download className="w-4 h-4" /> Download Excel Lengkap
+                  </button>
                 </div>
 
                 <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
