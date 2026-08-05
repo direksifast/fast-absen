@@ -66,6 +66,25 @@ CREATE TABLE public.leave_requests (
 );
 ```
 
+### Tabel `push_subscriptions` (Untuk Notifikasi HP Background)
+```sql
+CREATE TABLE public.push_subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    employee_id TEXT NOT NULL,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Atur RLS / Izin Akses Publik jika diperlukan
+ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public insert and update" ON public.push_subscriptions
+    FOR ALL USING (true) WITH CHECK (true);
+```
+
+
 ## 3. Storage untuk Foto Absen
 1. Buka menu **Storage** di Supabase.
 2. Buat bucket baru bernama `attendance_photos`.
