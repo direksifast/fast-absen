@@ -362,16 +362,19 @@ export function BarcodeScanner({
                   isScanned = true;
                   detectingRef.current = false;
                   setScanning(false);
+                  setFaceStatusText(`Menyimpan Biometrik: ${targetEmp?.name}...`);
                   const photo = capturePhoto();
                   
                   if (onRegisterFace && targetEmployeeId) {
-                    await onRegisterFace(targetEmployeeId, currentDescriptor, photo);
+                    try {
+                      await onRegisterFace(targetEmployeeId, currentDescriptor, photo);
+                    } catch (regErr) {
+                      console.error("Face registration error:", regErr);
+                    }
                   }
                   
-                  setTimeout(() => {
-                    stopCamera();
-                    onScan(targetEmployeeId, photo, locData);
-                  }, 500);
+                  stopCamera();
+                  onScan(targetEmployeeId, photo, locData);
                 }
               }
             } else {
