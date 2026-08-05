@@ -231,6 +231,21 @@ export function EmployeeView({
 
   const [showPulangCepat, setShowPulangCepat] = useState(false);
   const [pulangCepatReason, setPulangCepatReason] = useState("");
+  const [registeringFace, setRegisteringFace] = useState(false);
+
+  const handleRegisterFace = async (empId: string, descriptor: number[], photoData?: string) => {
+    let photoUrl = employee.facePhotoUrl;
+    if (photoData) {
+      photoUrl = await api.uploadPhoto(photoData, `profiles/${empId}.jpg`);
+    }
+    const updatedEmp: Employee = {
+      ...employee,
+      faceDescriptor: descriptor,
+      facePhotoUrl: photoUrl
+    };
+    await onUpdateEmployee(updatedEmp);
+  };
+
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -364,7 +379,7 @@ export function EmployeeView({
               </div>
             </div>
 
-            <BarcodeScanner onScan={(id, photo, loc) => onScanSuccess(id, "absen", photo, loc)} disabled={!canScan} employees={employees} targetEmployeeId={employee.id} />
+            <BarcodeScanner onScan={(id, photo, loc) => onScanSuccess(id, "absen", photo, loc)} onRegisterFace={handleRegisterFace} disabled={!canScan} employees={employees} targetEmployeeId={employee.id} />
 
             {!canScan && todayRecord && !todayRecord.checkOut && currentMinsTotal < startCheckOutMins && (
               <div className="flex items-center gap-2 bg-amber-50 text-amber-700 rounded-xl p-4 text-sm font-semibold my-4">
@@ -411,6 +426,7 @@ export function EmployeeView({
                         <p className="text-xs text-center text-muted-foreground mb-2">Scan wajah untuk konfirmasi pulang cepat</p>
                         <BarcodeScanner 
                           onScan={(id, photo, loc) => onScanSuccess(id, "pulang_cepat", photo, loc, pulangCepatReason)} 
+                          onRegisterFace={handleRegisterFace}
                           disabled={false} 
                           employees={employees} 
                           targetEmployeeId={employee.id} 
@@ -450,6 +466,7 @@ export function EmployeeView({
             ) : todayRecord?.lemburIn ? (
               <BarcodeScanner 
                 onScan={(id, photo, loc) => onScanSuccess(id, "lemburOut", photo, loc)} 
+                onRegisterFace={handleRegisterFace}
                 employees={employees} 
                 targetEmployeeId={employee.id} 
                 forceMode="face"
@@ -458,6 +475,7 @@ export function EmployeeView({
             ) : (
               <BarcodeScanner 
                 onScan={(id, photo, loc) => onScanSuccess(id, "lemburIn", photo, loc)} 
+                onRegisterFace={handleRegisterFace}
                 employees={employees} 
                 targetEmployeeId={employee.id} 
                 forceMode="face"
@@ -563,12 +581,69 @@ export function EmployeeView({
         )}
 
         {tab === "akun" && (
-          <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-border flex items-center gap-3">
-              <Shield className="w-5 h-5 text-primary" />
-              <span className="font-semibold text-foreground">Pengaturan Keamanan</span>
+          <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden space-y-6">
+            {/* Status Biometrik Wajah */}
+            <div className="p-6 border-b border-border">
+              <div className="flex items-center gap-3 mb-4">
+                <ScanFace className="w-5 h-5 text-primary" />
+                <span className="font-semibold text-foreground">Data Biometrik Wajah</span>
+              </div>
+
+              {employee.faceDescriptor && employee.faceDescriptor.length > 0 ? (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    {employee.facePhotoUrl ? (
+                      <img src={employee.facePhotoUrl} alt="Wajah Master" className="w-12 h-12 rounded-xl object-cover border border-emerald-300 shadow-sm" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold">
+                        <CheckCircle2 className="w-6 h-6" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-bold text-emerald-900 text-sm flex items-center gap-1.5">
+                        Wajah Biometrik Terdaftar
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                      </p>
+                      <p className="text-xs text-emerald-700 mt-0.5">
+                        Hanya wajah Anda yang dapat digunakan untuk absen masuk & pulang.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={async () => {
+                      if (confirm("Apakah Anda yakin ingin menghapus data wajah dan melakukan foto ulang biometrik?")) {
+                        const updated = { ...employee, faceDescriptor: undefined, facePhotoUrl: undefined };
+                        await onUpdateEmployee(updated);
+                      }
+                    }}
+                    className="w-full sm:w-auto px-4 py-2 bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-100 rounded-xl text-xs font-bold transition-all shrink-0"
+                  >
+                    Foto Ulang Wajah
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold">
+                      <AlertCircle className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-amber-900 text-sm">Wajah Belum Terdaftar</p>
+                      <p className="text-xs text-amber-700 mt-0.5">
+                        Wajah Anda akan terdaftar secara otomatis pada saat melakukan Face Scan pertama kali.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="p-6">
+
+            <div className="p-6 pt-0">
+              <div className="flex items-center gap-3 mb-4">
+                <Shield className="w-5 h-5 text-primary" />
+                <span className="font-semibold text-foreground">Pengaturan PIN Keamanan</span>
+              </div>
               {!employee.pin ? (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
                   <div className="flex gap-3">

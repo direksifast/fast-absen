@@ -6,6 +6,7 @@ import { Employee, LocationData } from "../types";
 
 export function BarcodeScanner({
   onScan,
+  onRegisterFace,
   disabled,
   employees,
   targetEmployeeId,
@@ -13,6 +14,7 @@ export function BarcodeScanner({
   title,
 }: {
   onScan: (employeeId: string, photoData?: string, location?: LocationData) => void;
+  onRegisterFace?: (employeeId: string, descriptor: number[], photoData?: string) => Promise<void>;
   disabled?: boolean;
   employees: Employee[];
   targetEmployeeId?: string;
@@ -27,6 +29,7 @@ export function BarcodeScanner({
   const [scanning, setScanning] = useState(false);
   const [scanMode, setScanMode] = useState<"qr" | "face">(forceMode || "qr");
   const [faceStatus, setFaceStatus] = useState<"idle" | "red" | "green">("idle");
+  const [faceStatusText, setFaceStatusText] = useState<string>("Menganalisis...");
   const [faceBox, setFaceBox] = useState<{ x: number, y: number, width: number, height: number } | null>(null);
   const faceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null);
@@ -150,6 +153,7 @@ export function BarcodeScanner({
     setActive(false);
     setScanning(false);
     setFaceStatus("idle");
+    setFaceStatusText("Menganalisis...");
     setFaceBox(null);
   }, []);
 
@@ -272,59 +276,113 @@ export function BarcodeScanner({
         requestAnimationFrame(loop);
       } else {
         try {
-          await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights');
+          const weightsUrl = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+          await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri(weightsUrl),
+            faceapi.nets.faceLandmark68TinyNet.loadFromUri(weightsUrl),
+            faceapi.nets.faceRecognitionNet.loadFromUri(weightsUrl)
+          ]);
         } catch (err) {
-          setError("Gagal memuat model pendeteksi wajah. Pastikan koneksi internet stabil.");
+          console.error("Failed to load face recognition models:", err);
+          setError("Gagal memuat model biometrik wajah. Pastikan koneksi internet stabil.");
           return;
         }
 
         let consistentFrames = 0;
         let isScanned = false;
+        const targetEmp = employees.find((e) => e.id === targetEmployeeId);
+        const hasRegisteredFace = !!(targetEmp?.faceDescriptor && targetEmp.faceDescriptor.length > 0);
         
         const loop = async () => {
           if (!detectingRef.current || !videoRef.current || isScanned) return;
           try {
-            const detection = await faceapi.detectSingleFace(
-              videoRef.current, 
-              new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
-            );
+            // Deteksi Wajah + Landmark 68 Titik + Extraction Descriptor 128 Vektor
+            const fullDetection = await faceapi
+              .detectSingleFace(
+                videoRef.current,
+                new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
+              )
+              .withFaceLandmarks(true)
+              .withFaceDescriptor();
             
-            if (detection && videoRef.current.videoWidth > 0) {
+            if (fullDetection && videoRef.current.videoWidth > 0) {
               const displaySize = { width: videoRef.current.clientWidth, height: videoRef.current.clientHeight };
-              const resized = faceapi.resizeResults(detection, displaySize);
+              const resized = faceapi.resizeResults(fullDetection.detection, displaySize);
               
               const mirroredX = displaySize.width - resized.box.x - resized.box.width;
-              
               setFaceBox({ x: mirroredX, y: resized.box.y, width: resized.box.width, height: resized.box.height });
-              
-              consistentFrames++;
-              if (consistentFrames > 3 && consistentFrames <= 7) {
+
+              if (!targetEmployeeId) {
+                setError("Wajib pilih nama karyawan terlebih dahulu sebelum Face Scan!");
                 setFaceStatus("red");
-              } else if (consistentFrames > 7) {
+                setFaceStatusText("Pilih Karyawan!");
+                return;
+              }
+
+              const currentDescriptor = Array.from(fullDetection.descriptor);
+
+              // ─── SKENARIO 1: PEMERIKSAAN KECOCOKAN WAJAH 1-TO-1 ───
+              if (hasRegisteredFace && targetEmp?.faceDescriptor) {
+                const savedDescriptor = new Float32Array(targetEmp.faceDescriptor);
+                const distance = faceapi.euclideanDistance(fullDetection.descriptor, savedDescriptor);
+
+                // Threshold kemiripan: distance <= 0.55 berarti >90% cocok!
+                if (distance <= 0.55) {
+                  setError(null);
+                  consistentFrames++;
+                  setFaceStatus("green");
+                  setFaceStatusText(`Wajah Cocok: ${targetEmp.name}`);
+
+                  if (consistentFrames >= 10) {
+                    isScanned = true;
+                    detectingRef.current = false;
+                    setScanning(false);
+                    const resultId = targetEmployeeId;
+                    const photo = capturePhoto();
+                    setTimeout(() => {
+                      stopCamera();
+                      onScan(resultId, photo, locData);
+                    }, 500);
+                  }
+                } else {
+                  // Mismatch! Wajah orang lain!
+                  consistentFrames = 0;
+                  setFaceStatus("red");
+                  setFaceStatusText(`⚠️ BUKAN WAJAH ${targetEmp.name.toUpperCase()}!`);
+                  setError(`Wajah tidak cocok! Pengguna wajah ini berbeda dengan profil terdaftar ${targetEmp.name}. Titip absen ditolak.`);
+                }
+              } else {
+                // ─── SKENARIO 2: REGISTRASI WAJAH PERTAMA KALI (AUTO-ENROLLMENT) ───
+                setError(null);
+                consistentFrames++;
                 setFaceStatus("green");
-                if (consistentFrames === 12) {
-                   isScanned = true;
-                   detectingRef.current = false;
-                   setScanning(false);
-                   if (!targetEmployeeId) {
-                     setError("Wajib pilih nama karyawan terlebih dahulu sebelum Face Scan!");
-                     stopCamera();
-                     return;
-                   }
-                   const resultId = targetEmployeeId;
-                   const photo = capturePhoto();
-                   setTimeout(() => {
-                     stopCamera();
-                     onScan(resultId, photo, locData);
-                   }, 500);
+                setFaceStatusText(`Registrasi Wajah Pertama: ${targetEmp?.name}`);
+
+                if (consistentFrames >= 10) {
+                  isScanned = true;
+                  detectingRef.current = false;
+                  setScanning(false);
+                  const photo = capturePhoto();
+                  
+                  if (onRegisterFace && targetEmployeeId) {
+                    await onRegisterFace(targetEmployeeId, currentDescriptor, photo);
+                  }
+                  
+                  setTimeout(() => {
+                    stopCamera();
+                    onScan(targetEmployeeId, photo, locData);
+                  }, 500);
                 }
               }
             } else {
               consistentFrames = 0;
               setFaceBox(null);
               setFaceStatus("idle");
+              setFaceStatusText("Menganalisis...");
             }
-          } catch (e) {}
+          } catch (e) {
+            console.error("Face detection loop error:", e);
+          }
           if (detectingRef.current && !isScanned) requestAnimationFrame(loop);
         };
         loop();
@@ -341,7 +399,7 @@ export function BarcodeScanner({
     } finally {
       setLocating(false);
     }
-  }, [onScan, scanMode, capturePhoto, employees, targetEmployeeId, stopCamera]);
+  }, [onScan, onRegisterFace, scanMode, capturePhoto, employees, targetEmployeeId, stopCamera]);
 
   useEffect(() => () => stopCamera(), [stopCamera]);
 
@@ -454,14 +512,18 @@ export function BarcodeScanner({
               <div className={`absolute inset-0 border border-white/20 transition-colors duration-300 rounded-xl ${faceStatus === "green" ? "border-green-500/50 bg-green-500/10" : "border-emerald-500/50 bg-emerald-500/5"}`} />
 
               {/* Status Badge */}
-              <div className={`absolute -bottom-12 px-5 py-2 rounded-full text-sm font-bold text-white shadow-[0_0_20px_rgba(0,0,0,0.5)] whitespace-nowrap transition-all duration-300 flex items-center gap-2 ${faceStatus === "green" ? "bg-green-500 scale-110 shadow-[0_0_20px_rgba(34,197,94,0.6)]" : "bg-black/80 border border-emerald-500/50 text-emerald-400 backdrop-blur-md"}`}>
+              <div className={`absolute -bottom-12 px-5 py-2 rounded-full text-sm font-bold text-white shadow-[0_0_20px_rgba(0,0,0,0.5)] whitespace-nowrap transition-all duration-300 flex items-center gap-2 ${faceStatus === "green" ? "bg-green-500 scale-110 shadow-[0_0_20px_rgba(34,197,94,0.6)]" : faceStatus === "red" ? "bg-red-600 border border-red-500 text-white" : "bg-black/80 border border-emerald-500/50 text-emerald-400 backdrop-blur-md"}`}>
                 {faceStatus === "green" ? (
                   <>
-                    <ScanFace className="w-4 h-4" /> Wajah Cocok!
+                    <ScanFace className="w-4 h-4" /> {faceStatusText}
+                  </>
+                ) : faceStatus === "red" ? (
+                  <>
+                    <AlertTriangle className="w-4 h-4" /> {faceStatusText}
                   </>
                 ) : (
                   <>
-                    <Scan className="w-4 h-4 animate-spin" /> Menganalisis...
+                    <Scan className="w-4 h-4 animate-spin" /> {faceStatusText}
                   </>
                 )}
               </div>

@@ -11,6 +11,8 @@ export interface Employee {
   initials: string;
   color: string;
   pin?: string;
+  faceDescriptor?: number[];
+  facePhotoUrl?: string;
 }
 
 export interface LocationData {

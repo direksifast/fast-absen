@@ -29,8 +29,15 @@ CREATE TABLE public.employees (
     position TEXT NOT NULL,
     initials TEXT NOT NULL,
     color TEXT NOT NULL,
+    pin TEXT,
+    face_descriptor JSONB,
+    face_photo_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Jalankan baris ini jika tabel employees sudah ada sebelumnya:
+ALTER TABLE public.employees ADD COLUMN IF NOT EXISTS face_descriptor JSONB;
+ALTER TABLE public.employees ADD COLUMN IF NOT EXISTS face_photo_url TEXT;
 ```
 
 ### Tabel `attendance`
