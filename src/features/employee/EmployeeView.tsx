@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import QRCode from "qrcode";
-import { LogOut, Clock, CheckCircle2, AlertCircle, FileText, QrCode, CalendarDays, Download, Printer, MapPin, Shield, KeyRound, ChevronRight } from "lucide-react";
+import { LogOut, Clock, CheckCircle2, AlertCircle, FileText, QrCode, CalendarDays, Download, Printer, MapPin, Shield, KeyRound, ChevronRight, ScanFace } from "lucide-react";
 import { Employee, AttendanceRecord, LeaveRequest, LeaveType, AttendanceStatus } from "../../types";
 import { StatusBadge, LEAVE_CONFIG, LEAVE_STATUS_CONFIG } from "../../components/StatusBadge";
 import { BarcodeScanner } from "../../components/BarcodeScanner";
