@@ -426,6 +426,26 @@ export function BarcodeScanner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scanMode]);
 
+  if (forceMode === "face" && !appSettings.allowFaceScan) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center shadow-sm my-2">
+        <AlertTriangle className="w-5 h-5 text-amber-600 mx-auto mb-1" />
+        <p className="text-xs font-bold text-amber-900">Scan Wajah Sedang Dinonaktifkan Admin</p>
+        <p className="text-[11px] text-amber-700 mt-0.5">Fitur scan wajah sedang dimatikan sementara oleh Admin.</p>
+      </div>
+    );
+  }
+
+  if (forceMode === "qr" && !appSettings.allowQrScan) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center shadow-sm my-2">
+        <AlertTriangle className="w-5 h-5 text-amber-600 mx-auto mb-1" />
+        <p className="text-xs font-bold text-amber-900">Scan QR Code Sedang Dinonaktifkan Admin</p>
+        <p className="text-[11px] text-amber-700 mt-0.5">Fitur scan QR Code sedang dimatikan sementara oleh Admin.</p>
+      </div>
+    );
+  }
+
   if (!appSettings.allowQrScan && !appSettings.allowFaceScan) {
     return (
       <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center shadow-sm my-2">
