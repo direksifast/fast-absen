@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { BellRing, Volume2, CheckCircle2, X, Smartphone, Bell } from "lucide-react";
+import { BellRing, Volume2, CheckCircle2, X, Smartphone, Bell, RefreshCw } from "lucide-react";
 import { AttendanceRecord, Employee } from "../types";
 import { getTodayStr, getServerTime } from "../utils";
 import { soundService } from "../utils/sound";
@@ -15,6 +15,7 @@ interface AttendanceAlarmProps {
 export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: AttendanceAlarmProps) {
   const [activeAlarm, setActiveAlarm] = useState<"in" | "out" | null>(null);
   const [testingSound, setTestingSound] = useState<"in" | "out" | null>(null);
+  const [testingPush, setTestingPush] = useState(false);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
     NotificationService.getPermission()
   );
@@ -30,13 +31,20 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
     window.addEventListener("click", handleFirstInteraction);
     window.addEventListener("touchstart", handleFirstInteraction);
 
+    // Otomatis Daftarkan Web Push Subscription untuk Notifikasi Server saat aplikasi ditutup
+    if (NotificationService.getPermission() === "granted") {
+      registerPushNotification(employee.id).catch((err) => {
+        console.warn("[AttendanceAlarm] Push registration warning:", err);
+      });
+    }
+
     return () => {
       window.removeEventListener("click", handleFirstInteraction);
       window.removeEventListener("touchstart", handleFirstInteraction);
     };
-  }, []);
+  }, [employee.id]);
 
-  // Timer pengecekan setiap 5 detik untuk alarm otomatis
+  // Timer pengecekan setiap 5 detik untuk alarm otomatis saat app terbuka
   useEffect(() => {
     const checkAlarmTime = () => {
       const now = getServerTime();
@@ -130,13 +138,34 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
     const granted = await NotificationService.requestPermission();
     setNotifPermission(NotificationService.getPermission());
     if (granted) {
-      // Register Cloud Push Subscription for server-side push notifications
       await registerPushNotification(employee.id);
 
       NotificationService.sendSystemNotification("✅ Notifikasi HP Berhasil Aktif!", {
         body: "Anda akan menerima notifikasi pengingat absen masuk (08:30) & absen pulang (17:00) langsung di layar HP meskipun aplikasi ditutup.",
       });
     }
+  };
+
+  const handleTestCloudPush = async () => {
+    setTestingPush(true);
+    // 1. Daftarkan push subscription terbaru
+    await registerPushNotification(employee.id);
+
+    // 2. Notifikasi lokal langsung untuk konfirmasi
+    NotificationService.sendSystemNotification("🧪 Mengirim Tes Push Server...", {
+      body: "Notifikasi server akan tiba di layar HP dalam 3 detik. Tutup/minimize aplikasi sekarang untuk menguji!",
+    });
+
+    // 3. Panggil API Vercel Serverless Push Notification setelah 3 detik
+    setTimeout(async () => {
+      try {
+        await fetch("/api/cron-reminder?type=in&test=true");
+      } catch (err) {
+        console.warn("Tes push server trigger warning:", err);
+      } finally {
+        setTestingPush(false);
+      }
+    }, 3000);
   };
 
   return (
@@ -173,8 +202,8 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
           )}
         </div>
 
-        {/* Tombol Uji Coba Suara */}
-        <div className="pt-2 border-t border-border flex items-center gap-2">
+        {/* Tombol Uji Coba Suara & Push Server */}
+        <div className="pt-2 border-t border-border flex items-center gap-2 flex-wrap sm:flex-nowrap">
           <button
             onClick={() => handleTestSound("in")}
             className={`flex-1 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center justify-center gap-1.5 ${
@@ -201,14 +230,13 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
 
           {notifPermission === "granted" && (
             <button
-              onClick={() => {
-                NotificationService.sendSystemNotification("🔔 Tes Notifikasi Layar HP", {
-                  body: "Ini adalah contoh notifikasi pengingat absen yang akan muncul di layar HP Anda!",
-                });
-              }}
-              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors flex items-center gap-1"
+              onClick={handleTestCloudPush}
+              disabled={testingPush}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors flex items-center justify-center gap-1 disabled:opacity-50 shrink-0"
+              title="Mengirim push notification langsung dari Server Vercel"
             >
-              <Smartphone className="w-3.5 h-3.5" /> Tes Notif HP
+              {testingPush ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Smartphone className="w-3.5 h-3.5" />}
+              {testingPush ? "Mengirim..." : "Tes Push HP (App Ditutup)"}
             </button>
           )}
         </div>
