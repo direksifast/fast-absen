@@ -3,6 +3,11 @@ export type AttendanceStatus = "hadir" | "terlambat" | "absen" | "izin" | "belum
 export type LeaveType = "izin" | "sakit" | "cuti";
 export type LeaveStatus = "pending" | "approved" | "rejected";
 
+export interface AppSettings {
+  allowQrScan: boolean;
+  allowFaceScan: boolean;
+}
+
 export interface Employee {
   id: string;
   name: string;

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { ClipboardList, UserCheck, BarChart3, FileText, Users, LogOut, Clock, AlertCircle, Coffee, UserX, AlertTriangle, Check, X, Camera, MapPin, Download, Trash2, Edit, KeyRound } from "lucide-react";
-import { AttendanceRecord, LeaveRequest, Employee, AttendanceStatus } from "../../types";
+import { ClipboardList, UserCheck, BarChart3, FileText, Users, LogOut, Clock, AlertCircle, Coffee, UserX, AlertTriangle, Check, X, Camera, MapPin, Download, Trash2, Edit, KeyRound, Settings, QrCode, ScanFace, CheckCircle2 } from "lucide-react";
+import { AttendanceRecord, LeaveRequest, Employee, AttendanceStatus, AppSettings } from "../../types";
 import { StatusBadge, LEAVE_CONFIG, LEAVE_STATUS_CONFIG } from "../../components/StatusBadge";
 import { getTodayStr, formatDate, formatDateTime, calculateDurationMins, calculateWorkDurationMins, formatMinutesToDecimal } from "../../utils";
 import { exportProfessionalExcel } from "../../utils/excelExport";
@@ -16,6 +16,8 @@ export function AdminView({
   onAddEmployee,
   onEditEmployee,
   onDeleteEmployee,
+  appSettings = { allowQrScan: true, allowFaceScan: true },
+  onUpdateSettings,
 }: {
   attendance: AttendanceRecord[];
   leaveRequests: LeaveRequest[];
@@ -26,8 +28,10 @@ export function AdminView({
   onAddEmployee: (emp: Employee) => void;
   onEditEmployee: (emp: Employee) => void;
   onDeleteEmployee: (id: string) => void;
+  appSettings?: AppSettings;
+  onUpdateSettings: (settings: AppSettings) => void;
 }) {
-  const [tab, setTab] = useState<"today" | "all" | "leave" | "employees" | "recap" | "recap_leave">("today");
+  const [tab, setTab] = useState<"today" | "all" | "leave" | "employees" | "recap" | "recap_leave" | "settings">("today");
   const [filterDate, setFilterDate] = useState(getTodayStr());
   const [filterStatus, setFilterStatus] = useState<AttendanceStatus | "all">("all");
   const [selectedPhoto, setSelectedPhoto] = useState<{ src: string, label: string } | null>(null);
@@ -197,6 +201,7 @@ export function AdminView({
               { key: "recap", label: "Rekap Absen", Icon: Download },
               { key: "recap_leave", label: "Rekap Izin/Cuti", Icon: FileText },
               { key: "employees", label: "Karyawan", Icon: Users },
+              { key: "settings", label: "Pengaturan Absen", Icon: Settings },
             ] as const).map(({ key, label, Icon }) => (
               <button
                 key={key}
@@ -226,8 +231,8 @@ export function AdminView({
             <button onClick={onLogout} className="p-2 rounded-xl hover:bg-white/10"><LogOut className="w-4 h-4" /></button>
           </header>
           <div className="flex gap-1 bg-muted p-1 mx-4 mt-4 rounded-xl overflow-x-auto">
-            {(["today","all","leave","recap","recap_leave"] as const).map((t) => {
-              const labels = { today: "Hari Ini", all: "Semua", leave: `Pengajuan${pendingLeave.length > 0 ? ` (${pendingLeave.length})` : ""}`, recap: "Rekap", recap_leave: "Izin/Cuti" };
+            {(["today","all","leave","recap","recap_leave","settings"] as const).map((t) => {
+              const labels = { today: "Hari Ini", all: "Semua", leave: `Pengajuan${pendingLeave.length > 0 ? ` (${pendingLeave.length})` : ""}`, recap: "Rekap", recap_leave: "Izin/Cuti", settings: "Pengaturan" };
               return (
                 <button key={t} onClick={() => setTab(t)} className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${tab === t ? "bg-card text-primary shadow-sm" : "text-muted-foreground"}`}>
                   {labels[t]}
@@ -794,6 +799,95 @@ export function AdminView({
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {tab === "settings" && (
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-xl font-bold text-foreground">Pengaturan Metode Absensi</h1>
+                  <p className="text-sm text-muted-foreground">Aktifkan atau nonaktifkan fitur Absen QR Code & Scan Wajah untuk seluruh karyawan</p>
+                </div>
+
+                <div className="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-muted/40 rounded-2xl border border-border">
+                    <div className="flex items-start sm:items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
+                        <QrCode className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-base text-foreground flex items-center gap-2">
+                          Absen Barcode / QR Code
+                          {appSettings.allowQrScan ? (
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              AKTIF
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-800 border border-red-300">
+                              NONAKTIF
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                          {appSettings.allowQrScan
+                            ? "Karyawan dapat melakukan absen masuk & pulang dengan scan Barcode / QR Code."
+                            : "Fitur Absen QR Code dikunci/nonaktifkan. Karyawan wajib menggunakan Scan Wajah."}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => onUpdateSettings({ ...appSettings, allowQrScan: !appSettings.allowQrScan })}
+                      className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md shrink-0 flex items-center justify-center gap-2 ${
+                        appSettings.allowQrScan
+                          ? "bg-red-600 hover:bg-red-700 text-white shadow-red-600/20"
+                          : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20"
+                      }`}
+                    >
+                      {appSettings.allowQrScan ? "Nonaktifkan QR Code ⛔" : "Aktifkan QR Code ✅"}
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-muted/40 rounded-2xl border border-border">
+                    <div className="flex items-start sm:items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
+                        <ScanFace className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-base text-foreground flex items-center gap-2">
+                          Absen Scan Wajah Biometrik (AI)
+                          {appSettings.allowFaceScan ? (
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              AKTIF
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-800 border border-red-300">
+                              NONAKTIF
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                          {appSettings.allowFaceScan
+                            ? "Karyawan dapat melakukan absen masuk & pulang menggunakan Scan Wajah Biometrik AI."
+                            : "Fitur Scan Wajah dikunci/nonaktifkan. Karyawan wajib menggunakan QR Code."}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => onUpdateSettings({ ...appSettings, allowFaceScan: !appSettings.allowFaceScan })}
+                      className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md shrink-0 flex items-center justify-center gap-2 ${
+                        appSettings.allowFaceScan
+                          ? "bg-red-600 hover:bg-red-700 text-white shadow-red-600/20"
+                          : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20"
+                      }`}
+                    >
+                      {appSettings.allowFaceScan ? "Nonaktifkan Scan Wajah ⛔" : "Aktifkan Scan Wajah ✅"}
+                    </button>
                   </div>
                 </div>
               </div>

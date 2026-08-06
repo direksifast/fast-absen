@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import * as faceapi from "face-api.js";
 import jsQR from "jsqr";
 import { Camera, CameraOff, X, AlertTriangle, QrCode, Scan, ScanFace, Eye, Upload } from "lucide-react";
-import { Employee, LocationData } from "../types";
+import { Employee, LocationData, AppSettings } from "../types";
 
 export function BarcodeScanner({
   onScan,
@@ -12,6 +12,7 @@ export function BarcodeScanner({
   targetEmployeeId,
   forceMode,
   title,
+  appSettings = { allowQrScan: true, allowFaceScan: true },
 }: {
   onScan: (employeeId: string, photoData?: string, location?: LocationData) => void;
   onRegisterFace?: (employeeId: string, descriptor: number[], photoData?: string) => Promise<void>;
@@ -20,6 +21,7 @@ export function BarcodeScanner({
   targetEmployeeId?: string;
   forceMode?: "qr" | "face";
   title?: string;
+  appSettings?: AppSettings;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -27,7 +29,18 @@ export function BarcodeScanner({
   const [active, setActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
-  const [scanMode, setScanMode] = useState<"qr" | "face">(forceMode || "qr");
+  const initialMode = forceMode || (!appSettings.allowQrScan && appSettings.allowFaceScan ? "face" : "qr");
+  const [scanMode, setScanMode] = useState<"qr" | "face">(initialMode);
+
+  useEffect(() => {
+    if (!forceMode) {
+      if (!appSettings.allowQrScan && appSettings.allowFaceScan && scanMode !== "face") {
+        setScanMode("face");
+      } else if (appSettings.allowQrScan && !appSettings.allowFaceScan && scanMode !== "qr") {
+        setScanMode("qr");
+      }
+    }
+  }, [appSettings.allowQrScan, appSettings.allowFaceScan, forceMode, scanMode]);
   const [faceStatus, setFaceStatus] = useState<"idle" | "red" | "green">("idle");
   const [faceStatusText, setFaceStatusText] = useState<string>("Menganalisis...");
   const [faceBox, setFaceBox] = useState<{ x: number, y: number, width: number, height: number } | null>(null);
@@ -413,6 +426,20 @@ export function BarcodeScanner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scanMode]);
 
+  if (!appSettings.allowQrScan && !appSettings.allowFaceScan) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center shadow-sm my-2">
+        <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-3 font-bold">
+          <AlertTriangle className="w-6 h-6" />
+        </div>
+        <h4 className="font-bold text-amber-900 text-sm">Metode Absen Sedang Pemeliharaan</h4>
+        <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+          Fitur Absen QR Code & Scan Wajah sedang dinonaktifkan oleh Admin kantor untuk pemeliharaan sistem.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
       <div className="px-6 py-4 border-b border-border flex flex-col md:flex-row md:items-center gap-4 justify-between">
@@ -428,19 +455,41 @@ export function BarcodeScanner({
         
         {!forceMode && (
           <div className="flex bg-muted p-1 rounded-xl">
-          <button
-            onClick={() => setScanMode("qr")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${scanMode === "qr" ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            <QrCode className="w-4 h-4" /> QR Code
-          </button>
-          <button
-            onClick={() => setScanMode("face")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${scanMode === "face" ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            <ScanFace className="w-4 h-4" /> Face Scan
-          </button>
-        </div>
+            <button
+              type="button"
+              disabled={!appSettings.allowQrScan}
+              onClick={() => {
+                if (!appSettings.allowQrScan) return;
+                setScanMode("qr");
+              }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                scanMode === "qr"
+                  ? "bg-card text-primary shadow-sm"
+                  : !appSettings.allowQrScan
+                  ? "opacity-40 cursor-not-allowed text-muted-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <QrCode className="w-4 h-4" /> QR Code {!appSettings.allowQrScan && "(Nonaktif)"}
+            </button>
+            <button
+              type="button"
+              disabled={!appSettings.allowFaceScan}
+              onClick={() => {
+                if (!appSettings.allowFaceScan) return;
+                setScanMode("face");
+              }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                scanMode === "face"
+                  ? "bg-card text-primary shadow-sm"
+                  : !appSettings.allowFaceScan
+                  ? "opacity-40 cursor-not-allowed text-muted-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <ScanFace className="w-4 h-4" /> Face Scan {!appSettings.allowFaceScan && "(Nonaktif)"}
+            </button>
+          </div>
         )}
       </div>
 

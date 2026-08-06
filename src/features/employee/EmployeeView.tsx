@@ -211,6 +211,7 @@ export function EmployeeView({
   onLeaveSubmit,
   onLogout,
   onUpdateEmployee,
+  appSettings = { allowQrScan: true, allowFaceScan: true },
 }: {
   employee: Employee;
   attendance: AttendanceRecord[];
@@ -220,6 +221,7 @@ export function EmployeeView({
   onLeaveSubmit: (req: Omit<LeaveRequest, "id" | "status" | "submittedAt">) => void;
   onLogout: () => void;
   onUpdateEmployee: (emp: Employee) => Promise<void>;
+  appSettings?: AppSettings;
 }) {
   const [tab, setTab] = useState<"scan" | "lembur" | "barcode" | "izin" | "riwayat" | "akun">("scan");
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -379,7 +381,7 @@ export function EmployeeView({
               </div>
             </div>
 
-            <BarcodeScanner onScan={(id, photo, loc) => onScanSuccess(id, "absen", photo, loc)} onRegisterFace={handleRegisterFace} disabled={!canScan} employees={employees} targetEmployeeId={employee.id} />
+            <BarcodeScanner onScan={(id, photo, loc) => onScanSuccess(id, "absen", photo, loc)} onRegisterFace={handleRegisterFace} disabled={!canScan} employees={employees} targetEmployeeId={employee.id} appSettings={appSettings} />
 
             {!canScan && todayRecord && !todayRecord.checkOut && currentMinsTotal < startCheckOutMins && (
               <div className="flex items-center gap-2 bg-amber-50 text-amber-700 rounded-xl p-4 text-sm font-semibold my-4">
@@ -432,6 +434,7 @@ export function EmployeeView({
                           targetEmployeeId={employee.id} 
                           forceMode="face"
                           title="Scan Wajah Pulang Cepat"
+                          appSettings={appSettings}
                         />
                       </div>
                     ) : (
@@ -473,6 +476,7 @@ export function EmployeeView({
                 targetEmployeeId={employee.id} 
                 forceMode="face"
                 title="Selesai Lembur"
+                appSettings={appSettings}
               />
             ) : (
               <BarcodeScanner 
@@ -482,6 +486,7 @@ export function EmployeeView({
                 targetEmployeeId={employee.id} 
                 forceMode="face"
                 title="Ambil Lembur"
+                appSettings={appSettings}
               />
             )}
           </>

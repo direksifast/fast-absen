@@ -1,4 +1,4 @@
-import { AttendanceRecord, Employee, LeaveRequest } from "../types";
+import { AttendanceRecord, Employee, LeaveRequest, AppSettings } from "../types";
 import { supabase } from "./supabase";
 
 // ─── UTILS: KONVERSI FORMAT DATA ───
@@ -32,6 +32,39 @@ export const api = {
   adminLogin: async (email: string, password: string): Promise<void> => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+  },
+
+  // --- App Settings (Metode Absen QR / Face) ---
+  getSettings: async (): Promise<AppSettings> => {
+    try {
+      const { data, error } = await supabase.from('app_settings').select('*').eq('id', 'default').single();
+      if (!error && data) {
+        return {
+          allowQrScan: data.allow_qr_scan ?? true,
+          allowFaceScan: data.allow_face_scan ?? true,
+        };
+      }
+    } catch (e) {}
+
+    const saved = localStorage.getItem('fast-absen-app-settings');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return { allowQrScan: true, allowFaceScan: true };
+  },
+
+  saveSettings: async (settings: AppSettings): Promise<void> => {
+    localStorage.setItem('fast-absen-app-settings', JSON.stringify(settings));
+    try {
+      await supabase.from('app_settings').upsert({
+        id: 'default',
+        allow_qr_scan: settings.allowQrScan,
+        allow_face_scan: settings.allowFaceScan,
+        updated_at: new Date().toISOString(),
+      });
+    } catch (e) {
+      console.warn("Supabase saveSettings warning:", e);
+    }
   },
 
   // --- Employees ---

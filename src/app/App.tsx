@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { ClipboardList, UserCheck, Shield, ChevronRight, Maximize, CheckCircle2, AlertCircle, XCircle } from "lucide-react";
-import { Employee, AppView, AttendanceRecord, LeaveRequest, LocationData } from "../types";
+import { Employee, AppView, AttendanceRecord, LeaveRequest, LocationData, AppSettings } from "../types";
 import { api } from "../services/api";
 import { supabase } from "../services/supabase";
 import { getTodayStr, getNowTime, getCheckInStatus, timeToMinutes, minutesToTime, fetchAddressFromCoordinates, syncServerTime } from "../utils";
@@ -45,6 +45,7 @@ export default function App() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [appSettings, setAppSettings] = useState<AppSettings>({ allowQrScan: true, allowFaceScan: true });
   
   const [view, setView] = useState<AppView | "admin_login">(() => {
     return (localStorage.getItem("fast-absen-view") as AppView | "admin_login") || "login";
@@ -80,6 +81,7 @@ export default function App() {
       const emps = await api.getEmployees();
       const atts = await api.getAttendance();
       const leaves = await api.getLeaveRequests();
+      const sets = await api.getSettings();
       setEmployees(emps);
       setCurrentEmployee((prev) => {
         if (!prev) return null;
@@ -87,6 +89,7 @@ export default function App() {
       });
       setAttendance(atts);
       setLeaveRequests(leaves);
+      setAppSettings(sets);
       setLoading(false);
     }
     loadData();
@@ -97,6 +100,9 @@ export default function App() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => {
         api.getLeaveRequests().then(setLeaveRequests);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_settings' }, () => {
+        api.getSettings().then(setAppSettings);
       })
       .subscribe();
 
@@ -309,6 +315,7 @@ export default function App() {
           attendance={attendance}
           leaveRequests={leaveRequests}
           employees={employees}
+          appSettings={appSettings}
           onScanSuccess={handleScan}
           onLeaveSubmit={handleLeaveSubmit}
           onLogout={() => { setCurrentEmployee(null); setView("login"); }}
@@ -326,6 +333,16 @@ export default function App() {
           attendance={attendance}
           leaveRequests={leaveRequests}
           employees={employees}
+          appSettings={appSettings}
+          onUpdateSettings={async (newSettings) => {
+            try {
+              await api.saveSettings(newSettings);
+              setAppSettings(newSettings);
+              setToast({ msg: "Pengaturan metode absen berhasil disimpan & diperbarui!", type: "success" });
+            } catch (e) {
+              setToast({ msg: "Gagal menyimpan pengaturan", type: "error" });
+            }
+          }}
           onApprove={handleApprove}
           onReject={handleReject}
           onLogout={() => setView("login")}
