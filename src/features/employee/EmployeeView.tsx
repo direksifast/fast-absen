@@ -430,6 +430,8 @@ export function EmployeeView({
                           disabled={false} 
                           employees={employees} 
                           targetEmployeeId={employee.id} 
+                          forceMode="face"
+                          title="Scan Wajah Pulang Cepat"
                         />
                       </div>
                     ) : (
