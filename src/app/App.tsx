@@ -72,26 +72,40 @@ export default function App() {
   
   const [toast, setToast] = useState<{ msg: string; type: "success" | "warning" | "error" } | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Load data on mount and subscribe to changes
+  // Load data on mount with 5-second max timeout protection
   useEffect(() => {
+    let isMounted = true;
     async function loadData() {
       setLoading(true);
-      await syncServerTime();
-      const emps = await api.getEmployees();
-      const atts = await api.getAttendance();
-      const leaves = await api.getLeaveRequests();
-      const sets = await api.getSettings();
-      setEmployees(emps);
-      setCurrentEmployee((prev) => {
-        if (!prev) return null;
-        return emps.find((e) => e.id === prev.id) || null;
-      });
-      setAttendance(atts);
-      setLeaveRequests(leaves);
-      setAppSettings(sets);
-      setLoading(false);
+      const timeout = setTimeout(() => {
+        if (isMounted) setLoading(false);
+      }, 5000);
+
+      try {
+        await syncServerTime();
+        const emps = await api.getEmployees();
+        const atts = await api.getAttendance();
+        const leaves = await api.getLeaveRequests();
+        const sets = await api.getSettings();
+
+        if (isMounted) {
+          setEmployees(emps);
+          setCurrentEmployee((prev) => {
+            if (!prev) return null;
+            return emps.find((e) => e.id === prev.id) || null;
+          });
+          setAttendance(atts);
+          setLeaveRequests(leaves);
+          setAppSettings(sets);
+        }
+      } catch (err) {
+        console.warn("[App] Error loading initial data:", err);
+      } finally {
+        clearTimeout(timeout);
+        if (isMounted) setLoading(false);
+      }
     }
+
     loadData();
 
     const channel = supabase.channel('app-realtime')
@@ -107,6 +121,7 @@ export default function App() {
       .subscribe();
 
     return () => {
+      isMounted = false;
       supabase.removeChannel(channel);
     };
   }, []);
@@ -294,41 +309,9 @@ export default function App() {
         />
       )}
 
-      {view === "login" && (
-        <LoginSelectionView
-          employees={employees}
-          onEmployeeLogin={(id) => {
-            setCurrentEmployee(employees.find((e) => e.id === id)!);
-            setView("employee");
-          }}
-          onAdminLogin={() => setView("admin_login")}
-        />
-      )}
-
-      {view === "admin_login" && (
+      {view === "admin_login" ? (
         <AdminLogin onLogin={() => setView("admin")} onBack={() => setView("login")} />
-      )}
-
-      {view === "employee" && currentEmployee && (
-        <EmployeeView
-          employee={currentEmployee}
-          attendance={attendance}
-          leaveRequests={leaveRequests}
-          employees={employees}
-          appSettings={appSettings}
-          onScanSuccess={handleScan}
-          onLeaveSubmit={handleLeaveSubmit}
-          onLogout={() => { setCurrentEmployee(null); setView("login"); }}
-          onUpdateEmployee={async (emp) => {
-            await api.saveEmployee(emp);
-            setEmployees(prev => prev.map(e => e.id === emp.id ? emp : e));
-            setCurrentEmployee(emp);
-            setToast({ msg: "PIN berhasil diperbarui!", type: "success" });
-          }}
-        />
-      )}
-
-      {view === "admin" && (
+      ) : view === "admin" ? (
         <AdminView
           attendance={attendance}
           leaveRequests={leaveRequests}
@@ -364,6 +347,32 @@ export default function App() {
             setEmployees((prev) => prev.filter(emp => emp.id !== id));
             setToast({ msg: "Karyawan berhasil dihapus", type: "success" });
           }}
+        />
+      ) : view === "employee" && currentEmployee ? (
+        <EmployeeView
+          employee={currentEmployee}
+          attendance={attendance}
+          leaveRequests={leaveRequests}
+          employees={employees}
+          appSettings={appSettings}
+          onScanSuccess={handleScan}
+          onLeaveSubmit={handleLeaveSubmit}
+          onLogout={() => { setCurrentEmployee(null); setView("login"); }}
+          onUpdateEmployee={async (emp) => {
+            await api.saveEmployee(emp);
+            setEmployees(prev => prev.map(e => e.id === emp.id ? emp : e));
+            setCurrentEmployee(emp);
+            setToast({ msg: "PIN berhasil diperbarui!", type: "success" });
+          }}
+        />
+      ) : (
+        <LoginSelectionView
+          employees={employees}
+          onEmployeeLogin={(id) => {
+            setCurrentEmployee(employees.find((e) => e.id === id)!);
+            setView("employee");
+          }}
+          onAdminLogin={() => setView("admin_login")}
         />
       )}
     </div>
