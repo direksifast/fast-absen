@@ -44,8 +44,8 @@ export class NotificationService {
         const registration = await navigator.serviceWorker.getRegistration();
         if (registration && registration.showNotification) {
           await registration.showNotification(title, {
-            icon: "/pwa-512x512.svg",
-            badge: "/pwa-512x512.svg",
+            icon: "/pwa-192x192.png",
+            badge: "/badge.png",
             vibrate: [300, 100, 300, 100, 300],
             requireInteraction: true,
             tag: "fast-absen-reminder",
@@ -57,7 +57,7 @@ export class NotificationService {
 
       // 2. Fallback Notifikasi Browser standar
       const notif = new Notification(title, {
-        icon: "/pwa-512x512.svg",
+        icon: "/pwa-192x192.png",
         vibrate: [300, 100, 300],
         ...options,
       } as any);

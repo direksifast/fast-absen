@@ -292,7 +292,7 @@ export function BarcodeScanner({
           const weightsUrl = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
           await Promise.all([
             faceapi.nets.tinyFaceDetector.loadFromUri(weightsUrl),
-            faceapi.nets.faceLandmark68TinyNet.loadFromUri(weightsUrl),
+            faceapi.nets.faceLandmark68Net.loadFromUri(weightsUrl),
             faceapi.nets.faceRecognitionNet.loadFromUri(weightsUrl)
           ]);
         } catch (err) {
@@ -309,13 +309,13 @@ export function BarcodeScanner({
         const loop = async () => {
           if (!detectingRef.current || !videoRef.current || isScanned) return;
           try {
-            // Deteksi Wajah + Landmark 68 Titik + Extraction Descriptor 128 Vektor
+            // Deteksi Wajah + Landmark 68 Titik Presisi + Extraction Descriptor 128 Vektor
             const fullDetection = await faceapi
               .detectSingleFace(
                 videoRef.current,
-                new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
+                new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 })
               )
-              .withFaceLandmarks(true)
+              .withFaceLandmarks(false) // Gunakan faceLandmark68Net presisi (bukan tiny landmark)
               .withFaceDescriptor();
             
             if (fullDetection && videoRef.current.videoWidth > 0) {
@@ -333,20 +333,39 @@ export function BarcodeScanner({
               }
 
               const currentDescriptor = Array.from(fullDetection.descriptor);
+              const STRICT_THRESHOLD = 0.43; // Threshold Euclidean Distance presisi tinggi (<= 0.43)
+
+              // ─── CROSS-CHECK ANTI-SPOOFING: Cek apakah wajah ini milik karyawan LAIN ───
+              let closestOtherEmp: { name: string; distance: number } | null = null;
+              for (const emp of employees) {
+                if (emp.id !== targetEmployeeId && emp.faceDescriptor && emp.faceDescriptor.length > 0) {
+                  const otherDescriptor = new Float32Array(emp.faceDescriptor);
+                  const dist = faceapi.euclideanDistance(fullDetection.descriptor, otherDescriptor);
+                  if (!closestOtherEmp || dist < closestOtherEmp.distance) {
+                    closestOtherEmp = { name: emp.name, distance: dist };
+                  }
+                }
+              }
 
               // ─── SKENARIO 1: PEMERIKSAAN KECOCOKAN WAJAH 1-TO-1 ───
               if (hasRegisteredFace && targetEmp?.faceDescriptor) {
                 const savedDescriptor = new Float32Array(targetEmp.faceDescriptor);
-                const distance = faceapi.euclideanDistance(fullDetection.descriptor, savedDescriptor);
+                const targetDistance = faceapi.euclideanDistance(fullDetection.descriptor, savedDescriptor);
 
-                // Threshold kemiripan: distance <= 0.55 berarti >90% cocok!
-                if (distance <= 0.55) {
+                // Proteksi Titip Absen: Jika wajah terbukti milik karyawan lain
+                if (closestOtherEmp && closestOtherEmp.distance <= STRICT_THRESHOLD && closestOtherEmp.distance < targetDistance - 0.05) {
+                  consistentFrames = 0;
+                  setFaceStatus("red");
+                  setFaceStatusText(`⚠️ TERDETEKSI SEBAGAI WAJAH ${closestOtherEmp.name.toUpperCase()}!`);
+                  setError(`Wajah ini terdeteksi sebagai ${closestOtherEmp.name}, bukan ${targetEmp.name}. Titip absen ditolak!`);
+                } else if (targetDistance <= STRICT_THRESHOLD) {
+                  // Cocok dengan target employee!
                   setError(null);
                   consistentFrames++;
                   setFaceStatus("green");
                   setFaceStatusText(`Wajah Cocok: ${targetEmp.name}`);
 
-                  if (consistentFrames >= 10) {
+                  if (consistentFrames >= 8) {
                     isScanned = true;
                     detectingRef.current = false;
                     setScanning(false);
@@ -358,36 +377,44 @@ export function BarcodeScanner({
                     }, 500);
                   }
                 } else {
-                  // Mismatch! Wajah orang lain!
+                  // Mismatch! Wajah tidak cocok dengan target employee
                   consistentFrames = 0;
                   setFaceStatus("red");
                   setFaceStatusText(`⚠️ BUKAN WAJAH ${targetEmp.name.toUpperCase()}!`);
-                  setError(`Wajah tidak cocok! Pengguna wajah ini berbeda dengan profil terdaftar ${targetEmp.name}. Titip absen ditolak.`);
+                  setError(`Wajah tidak cocok dengan profil terdaftar ${targetEmp.name} (Kemiripan: ${Math.max(0, Math.round((1 - targetDistance) * 100))}%). Titip absen ditolak.`);
                 }
               } else {
                 // ─── SKENARIO 2: REGISTRASI WAJAH PERTAMA KALI (AUTO-ENROLLMENT) ───
-                setError(null);
-                consistentFrames++;
-                setFaceStatus("green");
-                setFaceStatusText(`Registrasi Wajah Pertama: ${targetEmp?.name}`);
+                // Cek terlebih dahulu apakah wajah ini sudah terdaftar atas nama karyawan lain
+                if (closestOtherEmp && closestOtherEmp.distance <= STRICT_THRESHOLD) {
+                  consistentFrames = 0;
+                  setFaceStatus("red");
+                  setFaceStatusText(`⚠️ TERDAFTAR ATAS NAMA ${closestOtherEmp.name.toUpperCase()}!`);
+                  setError(`Wajah ini sudah terdaftar atas nama ${closestOtherEmp.name}. Dilarang menggunakan wajah ini untuk profil ${targetEmp?.name}!`);
+                } else {
+                  setError(null);
+                  consistentFrames++;
+                  setFaceStatus("green");
+                  setFaceStatusText(`Registrasi Wajah Pertama: ${targetEmp?.name}`);
 
-                if (consistentFrames >= 10) {
-                  isScanned = true;
-                  detectingRef.current = false;
-                  setScanning(false);
-                  setFaceStatusText(`Menyimpan Biometrik: ${targetEmp?.name}...`);
-                  const photo = capturePhoto();
-                  
-                  if (onRegisterFace && targetEmployeeId) {
-                    try {
-                      await onRegisterFace(targetEmployeeId, currentDescriptor, photo);
-                    } catch (regErr) {
-                      console.error("Face registration error:", regErr);
+                  if (consistentFrames >= 10) {
+                    isScanned = true;
+                    detectingRef.current = false;
+                    setScanning(false);
+                    setFaceStatusText(`Menyimpan Biometrik: ${targetEmp?.name}...`);
+                    const photo = capturePhoto();
+                    
+                    if (onRegisterFace && targetEmployeeId) {
+                      try {
+                        await onRegisterFace(targetEmployeeId, currentDescriptor, photo);
+                      } catch (regErr) {
+                        console.error("Face registration error:", regErr);
+                      }
                     }
+                    
+                    stopCamera();
+                    onScan(targetEmployeeId, photo, locData);
                   }
-                  
-                  stopCamera();
-                  onScan(targetEmployeeId, photo, locData);
                 }
               }
             } else {
