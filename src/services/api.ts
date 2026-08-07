@@ -35,7 +35,9 @@ export const api = {
   },
 
   // --- App Settings (Metode Absen QR / Face) ---
+  // --- App Settings (Metode Absen QR / Face) ---
   getSettings: async (): Promise<AppSettings> => {
+    // 1. Coba baca dari tabel app_settings (jika ada)
     try {
       const { data, error } = await supabase.from('app_settings').select('*').eq('id', 'default').single();
       if (!error && data) {
@@ -46,6 +48,19 @@ export const api = {
       }
     } catch (e) {}
 
+    // 2. Coba baca dari record sistem di tabel employees (__APP_SETTINGS__)
+    try {
+      const { data, error } = await supabase.from('employees').select('pin').eq('id', '__APP_SETTINGS__').single();
+      if (!error && data && data.pin) {
+        const parsed = JSON.parse(data.pin);
+        return {
+          allowQrScan: parsed.allowQrScan ?? true,
+          allowFaceScan: parsed.allowFaceScan ?? true,
+        };
+      }
+    } catch (e) {}
+
+    // 3. Fallback localStorage
     const saved = localStorage.getItem('fast-absen-app-settings');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
@@ -55,6 +70,23 @@ export const api = {
 
   saveSettings: async (settings: AppSettings): Promise<void> => {
     localStorage.setItem('fast-absen-app-settings', JSON.stringify(settings));
+
+    // 1. Simpan ke record sistem di tabel employees (__APP_SETTINGS__) untuk sinkronisasi seluruh perangkat
+    try {
+      await supabase.from('employees').upsert({
+        id: '__APP_SETTINGS__',
+        name: 'System Settings',
+        department: 'System',
+        position: 'Config',
+        initials: 'SYS',
+        color: '#000000',
+        pin: JSON.stringify(settings),
+      });
+    } catch (e) {
+      console.warn("Supabase saveSettings (employees fallback) warning:", e);
+    }
+
+    // 2. Coba simpan ke tabel app_settings
     try {
       await supabase.from('app_settings').upsert({
         id: 'default',
@@ -62,16 +94,15 @@ export const api = {
         allow_face_scan: settings.allowFaceScan,
         updated_at: new Date().toISOString(),
       });
-    } catch (e) {
-      console.warn("Supabase saveSettings warning:", e);
-    }
+    } catch (e) {}
   },
 
   // --- Employees ---
   getEmployees: async (): Promise<Employee[]> => {
     const { data, error } = await supabase.from('employees').select('*').order('id', { ascending: true });
     if (error) { console.error("Error getEmployees:", error); return []; }
-    return toCamel(data);
+    const emps = toCamel(data) as Employee[];
+    return emps.filter(e => e.id !== '__APP_SETTINGS__');
   },
   
   saveEmployee: async (emp: Employee): Promise<void> => {

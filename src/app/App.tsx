@@ -115,6 +115,10 @@ export default function App() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => {
         api.getLeaveRequests().then(setLeaveRequests);
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'employees' }, () => {
+        api.getEmployees().then(setEmployees);
+        api.getSettings().then(setAppSettings);
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'app_settings' }, () => {
         api.getSettings().then(setAppSettings);
       })
