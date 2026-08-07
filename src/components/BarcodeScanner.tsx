@@ -352,8 +352,8 @@ export function BarcodeScanner({
                 const savedDescriptor = new Float32Array(targetEmp.faceDescriptor);
                 const targetDistance = faceapi.euclideanDistance(fullDetection.descriptor, savedDescriptor);
 
-                // Proteksi Titip Absen: Jika wajah terbukti milik karyawan lain
-                if (closestOtherEmp && closestOtherEmp.distance <= STRICT_THRESHOLD && closestOtherEmp.distance < targetDistance - 0.05) {
+                // Proteksi Titip Absen: Jika wajah terbukti milik karyawan lain (lebih cocok ke karyawan lain)
+                if (closestOtherEmp && closestOtherEmp.distance <= STRICT_THRESHOLD && closestOtherEmp.distance < targetDistance) {
                   consistentFrames = 0;
                   setFaceStatus("red");
                   setFaceStatusText(`⚠️ TERDETEKSI SEBAGAI WAJAH ${closestOtherEmp.name.toUpperCase()}!`);

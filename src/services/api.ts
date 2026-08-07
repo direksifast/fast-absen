@@ -35,7 +35,6 @@ export const api = {
   },
 
   // --- App Settings (Metode Absen QR / Face) ---
-  // --- App Settings (Metode Absen QR / Face) ---
   getSettings: async (): Promise<AppSettings> => {
     // 1. Coba baca dari tabel app_settings (jika ada)
     try {
