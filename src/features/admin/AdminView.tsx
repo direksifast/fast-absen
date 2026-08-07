@@ -183,7 +183,7 @@ export function AdminView({
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Sidebar + Main Layout */}
-      <div className="flex flex-1 max-w-7xl mx-auto w-full">
+      <div className="flex flex-col md:flex-row flex-1 max-w-7xl mx-auto w-full">
         {/* Sidebar */}
         <aside className="hidden md:flex flex-col w-64 bg-primary min-h-screen shrink-0">
           <div className="px-6 py-6">
@@ -221,20 +221,36 @@ export function AdminView({
           </div>
         </aside>
 
-        {/* Mobile header */}
-        <div className="md:hidden w-full">
-          <header className="bg-primary text-white px-4 py-4 flex items-center justify-between">
+        {/* Mobile header & Responsive Tab Navigation */}
+        <div className="md:hidden w-full bg-background border-b border-border pb-3">
+          <header className="bg-primary text-white px-4 py-4 flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-2">
-              <ClipboardList className="w-5 h-5" />
-              <span className="font-bold">FAST ABSEN Admin</span>
+              <ClipboardList className="w-5 h-5 text-white/90" />
+              <span className="font-bold text-base">FAST ABSEN Admin</span>
             </div>
-            <button onClick={onLogout} className="p-2 rounded-xl hover:bg-white/10"><LogOut className="w-4 h-4" /></button>
+            <button onClick={onLogout} className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+              <LogOut className="w-3.5 h-3.5" /> Keluar
+            </button>
           </header>
-          <div className="flex gap-1 bg-muted p-1 mx-4 mt-4 rounded-xl overflow-x-auto">
-            {(["today","all","leave","recap","recap_leave","settings"] as const).map((t) => {
-              const labels = { today: "Hari Ini", all: "Semua", leave: `Pengajuan${pendingLeave.length > 0 ? ` (${pendingLeave.length})` : ""}`, recap: "Rekap", recap_leave: "Izin/Cuti", settings: "Pengaturan" };
+          <div className="flex gap-1.5 bg-muted p-1.5 mx-3 mt-3 rounded-2xl overflow-x-auto no-scrollbar">
+            {(["today","all","leave","recap","recap_leave","employees","settings"] as const).map((t) => {
+              const labels = { 
+                today: "Hari Ini", 
+                all: "Semua", 
+                leave: `Pengajuan${pendingLeave.length > 0 ? ` (${pendingLeave.length})` : ""}`, 
+                recap: "Rekap", 
+                recap_leave: "Izin/Cuti", 
+                employees: "Karyawan",
+                settings: "Pengaturan" 
+              };
               return (
-                <button key={t} onClick={() => setTab(t)} className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${tab === t ? "bg-card text-primary shadow-sm" : "text-muted-foreground"}`}>
+                <button 
+                  key={t} 
+                  onClick={() => setTab(t)} 
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+                    tab === t ? "bg-card text-primary shadow-sm font-bold" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
                   {labels[t]}
                 </button>
               );
