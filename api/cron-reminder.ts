@@ -4,9 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 import vapidKeys from '../src/utils/vapidKeys.json';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://cvrhmwqmprefrvzqlkvo.supabase.co';
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'sb_publishable_FR-_Sb7AYGLVl-dYm4p7Nw_igmF1ZsV';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'sb_publishable_FR-_Sb7AYGLVl-dYm4p7Nw_igmF1ZsV';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Configure Web Push with VAPID keys
 try {
@@ -20,8 +20,27 @@ try {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const type = (req.query.type as string) || 'in'; // 'in' or 'out'
+  // Add CORS headers for cross-origin cron calls or frontend testing
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  let type = req.query.type as string;
   const isTest = req.query.test === 'true';
+
+  // Otomatis tentukan tipe notifikasi jika tidak dispesifikasikan (UTC+7 WIB)
+  if (!type || type === 'auto') {
+    const wibHour = (new Date().getUTCHours() + 7) % 24;
+    if (wibHour >= 5 && wibHour < 12) {
+      type = 'in';
+    } else {
+      type = 'out';
+    }
+  }
 
   let title = '⏰ Peringatan Absen Masuk!';
   let body = 'Sudah jam 08:30 WIB! Jangan lupa segera lakukan Absen Masuk sebelum jam 09:00 WIB agar tidak terlambat.';
@@ -43,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     timestamp: Date.now()
   });
 
-  console.log(`[CronReminder] Running cron trigger for type: ${type}, test: ${isTest}`);
+  console.log(`[CronReminder] Running push trigger for type: ${type}, test: ${isTest}`);
 
   try {
     // 1. Ambil semua token push subscription dari Supabase
@@ -53,7 +72,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (error) {
       console.error('[CronReminder] Error fetching push subscriptions:', error);
-      return res.status(500).json({ error: 'Database error', details: error.message });
+      return res.status(500).json({ error: 'Database error fetching subscriptions', details: error.message });
     }
 
     if (!subscriptions || subscriptions.length === 0) {
@@ -61,7 +80,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({
         success: true,
         sentCount: 0,
-        message: 'No push subscriptions found in database.'
+        message: 'No push subscriptions found in database. Silakan klik Aktifkan Notifikasi di HP terlebih dahulu!'
       });
     }
 
@@ -117,4 +136,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: err.message || 'Internal server error' });
   }
 }
+
 

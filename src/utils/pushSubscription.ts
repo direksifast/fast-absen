@@ -16,7 +16,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray;
 }
 
-export async function registerPushNotification(employeeId?: string): Promise<boolean> {
+export async function registerPushNotification(employeeId?: string, forceRenew: boolean = false): Promise<boolean> {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     console.warn("[WebPush] Web Push Notifications tidak didukung di browser/device ini.");
     return false;
@@ -38,6 +38,16 @@ export async function registerPushNotification(employeeId?: string): Promise<boo
 
     // Check if subscription already exists
     let subscription = await registration.pushManager.getSubscription();
+
+    if (forceRenew && subscription) {
+      try {
+        await subscription.unsubscribe();
+        console.log("[WebPush] Subscription lama dibatalkan untuk pembaruan token...");
+        subscription = null;
+      } catch (unsubErr) {
+        console.warn("[WebPush] Gagal unsubscribe token lama:", unsubErr);
+      }
+    }
 
     if (!subscription) {
       const convertedKey = urlBase64ToUint8Array(vapidKeys.publicKey);
@@ -99,3 +109,4 @@ export async function registerPushNotification(employeeId?: string): Promise<boo
     return false;
   }
 }
+

@@ -1,4 +1,4 @@
-// Listener untuk menangkap Push Notification dari Vercel Server saat Aplikasi/Browser Mati Total
+// Listener untuk menangkap Push Notification dari Server Vercel saat Aplikasi/Browser Ditutup Total
 self.addEventListener('push', function (event) {
   let data = {
     title: '⏰ Peringatan FAST ABSEN',
@@ -16,26 +16,31 @@ self.addEventListener('push', function (event) {
     }
   }
 
+  const title = data.title || '⏰ FAST ABSEN';
   const options = {
-    body: data.body,
+    body: data.body || 'Jangan lupa lakukan absensi tepat waktu!',
     icon: '/pwa-192x192.png',
     badge: '/badge.png',
-    vibrate: [300, 100, 300, 100, 300],
+    vibrate: [500, 200, 500, 200, 500],
+    tag: 'fast-absen-push-notification',
+    renotify: true,
     requireInteraction: true,
+    silent: false,
+    timestamp: Date.now(),
     data: {
       url: data.url || '/'
     },
     actions: [
-      { action: 'open', title: 'Buka Aplikasi 🚀' }
+      { action: 'open', title: 'Buka Aplikasi Absensi 🚀' }
     ]
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    self.registration.showNotification(title, options)
   );
 });
 
-// Handling ketika notifikasi diklik di HP karyawan
+// Handling ketika notifikasi diklik di Notification Bar HP
 self.addEventListener('notificationclick', function (event) {
   event.notification.close();
   const targetUrl = event.notification.data ? event.notification.data.url : '/';
@@ -54,3 +59,4 @@ self.addEventListener('notificationclick', function (event) {
     })
   );
 });
+

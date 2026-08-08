@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { BellRing, Volume2, CheckCircle2, X, Smartphone, Bell, RefreshCw } from "lucide-react";
+import { BellRing, Volume2, CheckCircle2, X, Smartphone, Bell, RefreshCw, HelpCircle, AlertTriangle } from "lucide-react";
 import { AttendanceRecord, Employee } from "../types";
 import { getTodayStr, getServerTime } from "../utils";
 import { soundService } from "../utils/sound";
@@ -134,38 +134,72 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
     }
   };
 
+  const [testCountdown, setTestCountdown] = useState<number | null>(null);
+  const [testResult, setTestResult] = useState<string | null>(null);
+  const [showGuideModal, setShowGuideModal] = useState(false);
+
   const handleEnableNotification = async () => {
     const granted = await NotificationService.requestPermission();
     setNotifPermission(NotificationService.getPermission());
     if (granted) {
-      await registerPushNotification(employee.id);
-
-      NotificationService.sendSystemNotification("✅ Notifikasi HP Berhasil Aktif!", {
-        body: "Anda akan menerima notifikasi pengingat absen masuk (08:30) & absen pulang (17:00) langsung di layar HP meskipun aplikasi ditutup.",
-      });
+      const ok = await registerPushNotification(employee.id, true);
+      if (ok) {
+        setTestResult("✅ Notifikasi HP berhasil diaktifkan dan didaftarkan ke server!");
+        NotificationService.sendSystemNotification("✅ Notifikasi HP Berhasil Aktif!", {
+          body: "Anda akan menerima notifikasi pengingat absen masuk (08:30) & absen pulang (17:00) langsung di layar HP meskipun aplikasi ditutup.",
+        });
+      } else {
+        setTestResult("⚠️ Izin diberikan, namun pendaftaran push ke server gagal. Coba lagi.");
+      }
+    } else {
+      setTestResult("❌ Izin notifikasi ditolak oleh browser/HP. Silakan aktifkan izin notifikasi di setelan browser.");
     }
   };
 
   const handleTestCloudPush = async () => {
     setTestingPush(true);
-    // 1. Daftarkan push subscription terbaru
-    await registerPushNotification(employee.id);
+    setTestResult(null);
 
-    // 2. Notifikasi lokal langsung untuk konfirmasi
-    NotificationService.sendSystemNotification("🧪 Mengirim Tes Push Server...", {
-      body: "Notifikasi server akan tiba di layar HP dalam 3 detik. Tutup/minimize aplikasi sekarang untuk menguji!",
-    });
+    // 1. Daftarkan/Perbarui push subscription terbaru
+    const registered = await registerPushNotification(employee.id, true);
 
-    // 3. Panggil API Vercel Serverless Push Notification setelah 3 detik
-    setTimeout(async () => {
-      try {
-        await fetch("/api/cron-reminder?type=in&test=true");
-      } catch (err) {
-        console.warn("Tes push server trigger warning:", err);
-      } finally {
-        setTestingPush(false);
+    if (!registered) {
+      setTestResult("❌ Gagal mendapatkan token Push Subscription. Pastikan izin notifikasi diizinkan!");
+      setTestingPush(false);
+      return;
+    }
+
+    // 2. Tampilkan countdown 5 detik agar pengguna sempat menutup aplikasi/mengunci HP
+    let secondsLeft = 5;
+    setTestCountdown(secondsLeft);
+
+    const timer = setInterval(() => {
+      secondsLeft -= 1;
+      if (secondsLeft > 0) {
+        setTestCountdown(secondsLeft);
+      } else {
+        clearInterval(timer);
+        setTestCountdown(null);
+        // 3. Panggil API Vercel Serverless Push Notification
+        fetch("/api/cron-reminder?type=in&test=true")
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              setTestResult(
+                `🚀 Notifikasi server dikirim ke ${data.sentCount} dari ${data.totalSubscriptions} perangkat terdaftar! Cek Notification Bar HP Anda.`
+              );
+            } else {
+              setTestResult(`⚠️ Respon server: ${data.error || data.message || "Gagal mengirim push"}`);
+            }
+          })
+          .catch((err) => {
+            setTestResult(`❌ Gagal menghubungi API Push Server: ${err.message}`);
+          })
+          .finally(() => {
+            setTestingPush(false);
+          });
       }
-    }, 3000);
+    }, 1000);
   };
 
   return (
@@ -179,7 +213,7 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
             </div>
             <div>
               <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                Alarm & Notifikasi HP Active
+                Alarm & Push Notif HP (WhatsApp Style)
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
               </p>
               <p className="text-[11px] text-muted-foreground">
@@ -188,19 +222,48 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
             </div>
           </div>
 
-          {notifPermission !== "granted" ? (
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {notifPermission !== "granted" ? (
+              <button
+                onClick={handleEnableNotification}
+                className="w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-1.5 shrink-0"
+              >
+                <Smartphone className="w-4 h-4" /> Aktifkan Notifikasi HP 🔔
+              </button>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-[11px] font-semibold border border-emerald-200 shrink-0">
+                <Bell className="w-3.5 h-3.5" /> Notifikasi HP Aktif
+              </span>
+            )}
+
             <button
-              onClick={handleEnableNotification}
-              className="w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-1.5 shrink-0"
+              onClick={() => setShowGuideModal(true)}
+              className="p-1.5 rounded-lg bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors shrink-0"
+              title="Panduan Notifikasi HP saat aplikasi ditutup"
             >
-              <Smartphone className="w-4 h-4" /> Aktifkan Notifikasi Layar HP 🔔
+              <HelpCircle className="w-4 h-4" />
             </button>
-          ) : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-[11px] font-semibold border border-emerald-200 shrink-0">
-              <Bell className="w-3.5 h-3.5" /> Notifikasi HP Aktif
-            </span>
-          )}
+          </div>
         </div>
+
+        {/* Status / Test Result Message */}
+        {testCountdown !== null && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800 font-semibold flex items-center gap-2 animate-pulse">
+            <RefreshCw className="w-4 h-4 animate-spin shrink-0 text-blue-600" />
+            <span>
+              ⏰ Mengirim Notifikasi Cloud dalam <strong>{testCountdown} detik</strong>... <strong>TUTUP / MINIMIZE HP SEKARANG</strong> untuk menguji popup!
+            </span>
+          </div>
+        )}
+
+        {testResult && (
+          <div className="p-2.5 bg-slate-100 border border-slate-200 rounded-xl text-[11px] text-slate-700 font-medium flex items-center justify-between gap-2">
+            <span>{testResult}</span>
+            <button onClick={() => setTestResult(null)} className="text-slate-400 hover:text-slate-600">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Tombol Uji Coba Suara & Push Server */}
         <div className="pt-2 border-t border-border flex items-center gap-2 flex-wrap sm:flex-nowrap">
@@ -236,11 +299,77 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
               title="Mengirim push notification langsung dari Server Vercel"
             >
               {testingPush ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Smartphone className="w-3.5 h-3.5" />}
-              {testingPush ? "Mengirim..." : "Tes Push HP (App Ditutup)"}
+              {testingPush ? "Menguji..." : "Tes Push (App Ditutup)"}
             </button>
           )}
         </div>
       </div>
+
+      {/* ─── MODAL PANDUAN NOTIFIKASI HP ─── */}
+      {showGuideModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-card border border-border rounded-2xl p-5 max-w-lg w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto relative">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <Smartphone className="w-5 h-5 text-primary" /> Panduan Notifikasi Pop-up HP (WhatsApp Style)
+              </h3>
+              <button
+                onClick={() => setShowGuideModal(false)}
+                className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs leading-relaxed text-muted-foreground">
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 space-y-1">
+                <p className="font-bold flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" /> Mengapa Notifikasi HP Suka Tidak Muncul Saat App Ditutup?
+                </p>
+                <p>
+                  Browser Android (Chrome) & iOS (Safari) memiliki sistem penghemat baterai ketat yang sering mematikan notifikasi jika pengaturannya belum diizinkan.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-bold text-foreground">📱 1. Untuk HP Android (Xiaomi / Samsung / Oppo / Vivo / Realme):</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Buka <strong>Pengaturan HP &gt; Aplikasi &gt; Kelola Aplikasi &gt; Chrome (atau Browser Anda)</strong>.</li>
+                  <li>Di menu <strong>Izin Notifikasi</strong>, pastikan Layar Kunci &amp; Pop-up Diizinkan.</li>
+                  <li>Di menu <strong>Penghemat Baterai</strong>, ubah dari &quot;Hemat Baterai (Rekomendasi)&quot; menjadi <strong>&quot;Tidak Ada Pembatasan (Unrestricted)&quot;</strong>.</li>
+                  <li>Aktifkan opsi <strong>Mulai Otomatis (Autostart)</strong> agar Chrome diperbolehkan menerima Notifikasi Server saat ditutup.</li>
+                </ul>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-bold text-foreground">🍎 2. Untuk iPhone / iOS (Safari):</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Apple mengharuskan web ini ditambahkan ke Layar Utama terlebih dahulu.</li>
+                  <li>Buka web di <strong>Safari</strong> &gt; Tekan tombol <strong>Bagikan (Share)</strong> &gt; Pilih <strong>&quot;Tambah ke Layar Utama&quot; (Add to Home Screen)</strong>.</li>
+                  <li>Buka aplikasi dari Icon di Layar Utama HP, lalu klik <strong>Aktifkan Notifikasi HP 🔔</strong>.</li>
+                </ul>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-bold text-foreground">⚡ 3. Otomatisasi Cron Server (Vercel Free Plan Notice):</p>
+                <p>
+                  Pengingat otomatis dijadwalkan setiap <strong>08:30 WIB</strong> (Masuk) &amp; <strong>17:00 WIB</strong> (Pulang). Jika menggunakan akun Vercel Free, batas cron gratis adalah 1x/hari. Anda bisa mendaftarkan URL Cron berikut ke service gratis <code>cron-job.org</code>:
+                </p>
+                <div className="p-2 bg-slate-900 text-slate-100 rounded-lg font-mono text-[11px] break-all select-all">
+                  {window.location.origin}/api/cron-reminder?type=auto
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowGuideModal(false)}
+              className="w-full py-2.5 bg-primary text-primary-foreground font-bold rounded-xl text-xs hover:opacity-90 transition-opacity"
+            >
+              Mengerti &amp; Tutup Panduan
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ─── MODAL ALARM NYARING SAAT JAM TERSEBUT TIBA ─── */}
       {activeAlarm && (
