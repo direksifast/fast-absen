@@ -1,0 +1,25 @@
+name: Automatic Push Notification Cron
+
+on:
+  schedule:
+    # 08:30 WIB = 01:30 UTC (Senin - Sabtu)
+    - cron: '30 1 * * 1-6'
+    # 17:00 WIB = 10:00 UTC (Senin - Jumat)
+    - cron: '0 10 * * 1-5'
+    # 12:00 WIB = 05:00 UTC (Sabtu)
+    - cron: '0 5 * * 6'
+  workflow_dispatch:
+
+jobs:
+  trigger-push-notifications:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Push Notification API
+        run: |
+          TARGET_URL="${{ secrets.VERCEL_APP_URL }}"
+          if [ -z "$TARGET_URL" ]; then
+            # Default ke domain Vercel umum jika secret belum diisi
+            TARGET_URL="https://fast-absen.vercel.app"
+          fi
+          echo "Triggering API: ${TARGET_URL}/api/cron-reminder?type=auto"
+          curl -X GET "${TARGET_URL}/api/cron-reminder?type=auto" -H "User-Agent: GitHub-Actions-Cron"
