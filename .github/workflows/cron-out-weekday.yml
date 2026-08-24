@@ -1,0 +1,19 @@
+name: Cron Reminder Pulang (Weekday)
+
+on:
+  schedule:
+    - cron: '0 10 * * 1-5' # 17:00 WIB (Senin-Jumat)
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install dependencies
+        run: npm install
+      - name: Send Push Notification (Out)
+        run: node scripts/github-cron.mjs out

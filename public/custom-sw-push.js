@@ -21,7 +21,7 @@ self.addEventListener('push', function (event) {
     body: data.body || 'Jangan lupa lakukan absensi tepat waktu!',
     icon: '/pwa-192x192.png',
     badge: '/badge.png',
-    vibrate: [500, 200, 500, 200, 500],
+    vibrate: [1000, 500, 1000, 500, 1000, 500, 1000, 500, 1000, 500, 1000],
     tag: 'fast-absen-push-notification',
     renotify: true,
     requireInteraction: true,
