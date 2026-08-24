@@ -542,7 +542,7 @@ export function BarcodeScanner({
 
       <div className="p-6 flex flex-col gap-4">
         {/* Video */}
-        <div className="relative aspect-video bg-black rounded-xl overflow-hidden">
+        <div className="relative aspect-[3/4] md:aspect-video bg-black rounded-xl overflow-hidden">
           <video
             ref={videoRef}
             autoPlay

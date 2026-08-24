@@ -50,17 +50,7 @@ export function VersionChecker() {
       } else if (serverVersion !== currentVersionRef.current) {
         // A new version deployment is detected!
         console.log(`[VersionChecker] New version detected! Current: ${currentVersionRef.current}, Server: ${serverVersion}`);
-
-        // SMART HYBRID LOGIC:
-        // If tab is hidden/backgrounded, silently reload immediately!
-        if (document.visibilityState === "hidden" || !document.hasFocus()) {
-          console.log("[VersionChecker] Tab is hidden/unfocused. Triggering Silent Auto-Reload.");
-          forceReload();
-          return;
-        }
-
-        // If tab is currently active/visible, trigger Opsi A (Toast with countdown)
-        setHasUpdate(true);
+        forceReload();
       }
     } catch (err) {
       console.warn("[VersionChecker] Failed to fetch version info:", err);
