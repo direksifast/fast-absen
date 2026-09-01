@@ -99,14 +99,31 @@ class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-// Mendaftarkan Service Worker PWA & Web Push Notifications secara otomatis
+// Mendaftarkan Service Worker PWA & Web Push Notifications
 if ("serviceWorker" in navigator) {
+  // Register service worker
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").then((reg) => {
       console.log("[ServiceWorker] Registered successfully with scope:", reg.scope);
+      
+      // Cek update setiap kali tab dibuka kembali (dari background)
+      window.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          reg.update();
+        }
+      });
     }).catch((err) => {
       console.error("[ServiceWorker] Registration failed:", err);
     });
+  });
+
+  // Otomatis refresh halaman ketika ada Service Worker baru yang terinstal (versi baru)
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
   });
 }
 
