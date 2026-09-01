@@ -47,7 +47,6 @@ export class NotificationService {
             icon: "/pwa-192x192.png",
             badge: "/badge.png",
             vibrate: [300, 100, 300, 100, 300],
-            requireInteraction: true,
             tag: "fast-absen-reminder",
             ...options,
           } as any);

@@ -292,7 +292,7 @@ export function BarcodeScanner({
           const weightsUrl = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
           await Promise.all([
             faceapi.nets.tinyFaceDetector.loadFromUri(weightsUrl),
-            faceapi.nets.faceLandmark68Net.loadFromUri(weightsUrl),
+            faceapi.nets.faceLandmark68TinyNet.loadFromUri(weightsUrl),
             faceapi.nets.faceRecognitionNet.loadFromUri(weightsUrl)
           ]);
         } catch (err) {
@@ -313,9 +313,9 @@ export function BarcodeScanner({
             const fullDetection = await faceapi
               .detectSingleFace(
                 videoRef.current,
-                new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 })
+                new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
               )
-              .withFaceLandmarks(false) // Gunakan faceLandmark68Net presisi (bukan tiny landmark)
+              .withFaceLandmarks(true) // Gunakan tiny landmark agar jauh lebih ringan di HP
               .withFaceDescriptor();
             
             if (fullDetection && videoRef.current.videoWidth > 0) {
@@ -333,7 +333,7 @@ export function BarcodeScanner({
               }
 
               const currentDescriptor = Array.from(fullDetection.descriptor);
-              const STRICT_THRESHOLD = 0.43; // Threshold Euclidean Distance presisi tinggi (<= 0.43)
+              const STRICT_THRESHOLD = 0.55; // Threshold dinaikkan agar tidak terlalu kaku saat kondisi cahaya berbeda
 
               // ─── CROSS-CHECK ANTI-SPOOFING: Cek apakah wajah ini milik karyawan LAIN ───
               let closestOtherEmp: { name: string; distance: number } | null = null;
@@ -365,7 +365,7 @@ export function BarcodeScanner({
                   setFaceStatus("green");
                   setFaceStatusText(`Wajah Cocok: ${targetEmp.name}`);
 
-                  if (consistentFrames >= 8) {
+                  if (consistentFrames >= 4) {
                     isScanned = true;
                     detectingRef.current = false;
                     setScanning(false);
@@ -397,7 +397,7 @@ export function BarcodeScanner({
                   setFaceStatus("green");
                   setFaceStatusText(`Registrasi Wajah Pertama: ${targetEmp?.name}`);
 
-                  if (consistentFrames >= 10) {
+                  if (consistentFrames >= 5) {
                     isScanned = true;
                     detectingRef.current = false;
                     setScanning(false);

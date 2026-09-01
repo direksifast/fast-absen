@@ -24,7 +24,6 @@ self.addEventListener('push', function (event) {
     vibrate: [1000, 500, 1000, 500, 1000, 500, 1000, 500, 1000, 500, 1000],
     tag: 'fast-absen-push-notification',
     renotify: true,
-    requireInteraction: true,
     silent: false,
     timestamp: Date.now(),
     data: {
