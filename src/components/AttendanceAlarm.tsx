@@ -130,7 +130,7 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
       setTimeout(() => {
         soundService.stopAlarmLoop();
         setTestingSound(null);
-      }, 5000);
+      }, 12000);
     }
   };
 
