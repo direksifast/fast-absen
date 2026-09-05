@@ -197,8 +197,20 @@ export default function App() {
         setToast({ msg: "Gagal: Anda harus Absen Masuk terlebih dahulu sebelum pulang cepat!", type: "error" });
         return;
       }
+      // Auto check-out previous day for field workers if they forgot
+      if (emp.isFieldWorker) {
+        const pastUnfinished = attendance.find(r => r.employeeId === empId && r.date < today && r.checkIn && !r.checkOut);
+        if (pastUnfinished) {
+          const updatedPast = { ...pastUnfinished, checkOut: "23:59" };
+          try {
+            await api.saveAttendanceRecord(updatedPast);
+            setAttendance(prev => prev.map(r => r.id === updatedPast.id ? updatedPast : r));
+          } catch (e) { console.error("Gagal auto checkout hari sebelumnya", e); }
+        }
+      }
+
       // Check-in
-      const status = getCheckInStatus(now);
+      const status = emp.isFieldWorker ? "hadir" : getCheckInStatus(now);
       const newRecord: AttendanceRecord = {
         id: `${today}-${empId}`,
         employeeId: empId,
@@ -211,7 +223,9 @@ export default function App() {
       try {
         await api.saveAttendanceRecord(newRecord);
         setAttendance((prev) => [...prev, newRecord]);
-        if (status === "hadir") {
+        if (emp.isFieldWorker) {
+          setToast({ msg: `${emp.name} — Check-in Lapangan pukul ${now} ✓`, type: "success" });
+        } else if (status === "hadir") {
           setToast({ msg: `${emp.name} — Check-in tepat waktu pukul ${now} ✓`, type: "success" });
         } else {
           setToast({ msg: `${emp.name} — Terlambat! Check-in pukul ${now}`, type: "warning" });
@@ -231,7 +245,7 @@ export default function App() {
       const isSaturday = new Date().getDay() === 6;
       const requiredCheckOutMins = isSaturday ? 12 * 60 : 17 * 60;
       
-      if (action !== "pulang_cepat" && currentMins < requiredCheckOutMins) {
+      if (action !== "pulang_cepat" && currentMins < requiredCheckOutMins && !emp.isFieldWorker) {
         setToast({ msg: `Belum waktunya pulang! Jam kerja Anda selesai pukul ${minutesToTime(requiredCheckOutMins)}`, type: "error" });
         return;
       }

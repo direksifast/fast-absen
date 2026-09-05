@@ -39,11 +39,13 @@ export function AdminView({
   const [newEmpId, setNewEmpId] = useState("");
   const [newEmpName, setNewEmpName] = useState("");
   const [newEmpRole, setNewEmpRole] = useState("");
+  const [newEmpIsField, setNewEmpIsField] = useState(false);
 
   const [editingEmp, setEditingEmp] = useState<Employee | null>(null);
   const [editEmpName, setEditEmpName] = useState("");
   const [editEmpRole, setEditEmpRole] = useState("");
   const [editEmpDept, setEditEmpDept] = useState("");
+  const [editEmpIsField, setEditEmpIsField] = useState(false);
 
   const [recapMonth, setRecapMonth] = useState(getTodayStr().substring(0, 7)); // YYYY-MM
   const [leaveOverrides, setLeaveOverrides] = useState<Record<string, import("../../types").LeaveType>>({});
@@ -87,8 +89,8 @@ export function AdminView({
     if (!newEmpId || !newEmpName || !newEmpRole) return;
     const initials = newEmpName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
     const color = "#1B3E7A"; // Placeholder color
-    onAddEmployee({ id: newEmpId, name: newEmpName, department: "Umum", position: newEmpRole, initials, color });
-    setNewEmpId(""); setNewEmpName(""); setNewEmpRole("");
+    onAddEmployee({ id: newEmpId, name: newEmpName, department: "Umum", position: newEmpRole, initials, color, isFieldWorker: newEmpIsField });
+    setNewEmpId(""); setNewEmpName(""); setNewEmpRole(""); setNewEmpIsField(false);
   };
 
   const handleEditEmployeeSubmit = (e: React.FormEvent) => {
@@ -100,7 +102,8 @@ export function AdminView({
       name: editEmpName,
       department: editEmpDept,
       position: editEmpRole,
-      initials
+      initials,
+      isFieldWorker: editEmpIsField
     });
     setEditingEmp(null);
   };
@@ -743,7 +746,7 @@ export function AdminView({
                     <h3 className="font-semibold text-foreground flex items-center gap-2"><UserCheck className="w-5 h-5 text-primary" /> Tambah Karyawan Baru</h3>
                   </div>
                   <div className="p-6">
-                    <form onSubmit={handleAddEmployee} className="grid gap-4 md:grid-cols-4 items-end">
+                    <form onSubmit={handleAddEmployee} className="grid gap-4 md:grid-cols-5 items-end">
                       <div className="space-y-1">
                         <label className="text-xs font-semibold text-muted-foreground">ID Karyawan</label>
                         <input value={newEmpId} onChange={e => setNewEmpId(e.target.value)} required placeholder="EMP009" className="w-full bg-muted border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
@@ -755,6 +758,10 @@ export function AdminView({
                       <div className="space-y-1">
                         <label className="text-xs font-semibold text-muted-foreground">Jabatan</label>
                         <input value={newEmpRole} onChange={e => setNewEmpRole(e.target.value)} required placeholder="Staff" className="w-full bg-muted border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                      </div>
+                      <div className="space-y-1 flex items-center justify-center gap-2 h-full pb-2">
+                        <input type="checkbox" id="newFieldWorker" checked={newEmpIsField} onChange={e => setNewEmpIsField(e.target.checked)} className="w-4 h-4 rounded text-primary focus:ring-primary/20 cursor-pointer" />
+                        <label htmlFor="newFieldWorker" className="text-xs font-semibold text-muted-foreground cursor-pointer">Lapangan?</label>
                       </div>
                       <button type="submit" className="bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-xl text-sm hover:bg-primary/90 transition-colors h-[38px]">
                         Tambah
@@ -774,7 +781,10 @@ export function AdminView({
                           {emp.initials}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-sm text-foreground truncate">{emp.name}</h4>
+                          <h4 className="font-semibold text-sm text-foreground flex items-center gap-2">
+                            <span className="truncate">{emp.name}</span>
+                            {emp.isFieldWorker && <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 text-[10px] font-bold shrink-0">Lapangan</span>}
+                          </h4>
                           <p className="text-xs text-muted-foreground truncate">{emp.position} · {emp.id}</p>
                         </div>
                         <div className="flex items-center gap-1">
@@ -784,6 +794,7 @@ export function AdminView({
                               setEditEmpName(emp.name);
                               setEditEmpRole(emp.position);
                               setEditEmpDept(emp.department);
+                              setEditEmpIsField(!!emp.isFieldWorker);
                             }}
                             className="p-2 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
                             title="Edit Karyawan"
@@ -946,6 +957,10 @@ export function AdminView({
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-muted-foreground">Jabatan / Posisi</label>
                   <input value={editEmpRole} onChange={e => setEditEmpRole(e.target.value)} required className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div className="flex items-center gap-2 pt-2">
+                  <input type="checkbox" id="editFieldWorker" checked={editEmpIsField} onChange={e => setEditEmpIsField(e.target.checked)} className="w-4 h-4 rounded text-primary focus:ring-primary/20 cursor-pointer" />
+                  <label htmlFor="editFieldWorker" className="text-sm font-semibold text-muted-foreground cursor-pointer">Karyawan Kerja Lapangan</label>
                 </div>
                 <div className="pt-4 flex gap-3">
                   <button type="button" onClick={() => setEditingEmp(null)} className="flex-1 bg-muted text-muted-foreground font-semibold px-4 py-3 rounded-xl text-sm hover:bg-muted/80 transition-colors">Batal</button>

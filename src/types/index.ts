@@ -18,6 +18,7 @@ export interface Employee {
   pin?: string;
   faceDescriptor?: number[];
   facePhotoUrl?: string;
+  isFieldWorker?: boolean;
 }
 
 export interface LocationData {
