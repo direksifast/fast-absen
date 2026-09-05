@@ -47,6 +47,7 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
   // Timer pengecekan setiap 5 detik untuk alarm otomatis saat app terbuka
   useEffect(() => {
     const checkAlarmTime = () => {
+      if (employee.isFieldWorker) return;
       const now = getServerTime();
       const todayStr = getTodayStr();
       const hours = now.getHours();
@@ -91,7 +92,7 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
 
           // Kirim Notifikasi Sistem ke Layar HP
           NotificationService.sendSystemNotification("🔔 Peringatan Absen Pulang!", {
-            body: `Halo ${employee.name}, sudah jam 17:00 WIB! Jam kerja hari ini telah selesai, silakan absen pulang.`,
+            body: `Halo ${employee.name}, sudah jam ${isSaturday ? '12:00' : '17:00'} WIB! Jam kerja hari ini telah selesai, silakan absen pulang.`,
           });
           return;
         }
@@ -421,7 +422,7 @@ export function AttendanceAlarm({ employee, todayRecord, onGoToScan }: Attendanc
                 <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full uppercase tracking-wider mb-2 inline-block">
                   🔔 Peringatan Absen Pulang!
                 </span>
-                <h2 className="text-2xl font-black text-foreground mb-2">Sudah Jam 17:00 WIB!</h2>
+                <h2 className="text-2xl font-black text-foreground mb-2">Sudah Jam {new Date().getDay() === 6 ? '12:00' : '17:00'} WIB!</h2>
                 <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
                   Waktu kerja hari ini telah selesai! Halo <strong className="text-foreground">{employee.name}</strong>, silakan lakukan <strong>Absen Pulang</strong> sekarang sebelum pulang ke rumah.
                 </p>
