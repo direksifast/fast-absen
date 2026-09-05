@@ -199,8 +199,8 @@ export default function App() {
       }
       // Auto check-out previous day for field workers if they forgot
       if (emp.isFieldWorker) {
-        const pastUnfinished = attendance.find(r => r.employeeId === empId && r.date < today && r.checkIn && !r.checkOut);
-        if (pastUnfinished) {
+        const pastUnfinishedList = attendance.filter(r => r.employeeId === empId && r.date < today && r.checkIn && !r.checkOut);
+        for (const pastUnfinished of pastUnfinishedList) {
           const updatedPast = { ...pastUnfinished, checkOut: "23:59" };
           try {
             await api.saveAttendanceRecord(updatedPast);
