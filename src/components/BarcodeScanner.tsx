@@ -193,15 +193,15 @@ export function BarcodeScanner({
             } else {
               reject(new Error("Waktu tunggu GPS habis."));
             }
-          }, 30000); // Tunggu maksimal 30 detik
+          }, 10000); // Tunggu maksimal 10 detik agar tidak terlalu lama
 
           watchId = navigator.geolocation.watchPosition(
             (position) => {
               if (!bestPos || position.coords.accuracy < bestPos.coords.accuracy) {
                 bestPos = position;
               }
-              // Jika akurasi cukup baik (<= 25 meter), langsung gunakan
-              if (position.coords.accuracy <= 25) {
+              // Jika akurasi cukup baik (<= 100 meter), langsung gunakan agar cepat
+              if (position.coords.accuracy <= 100) {
                 clearTimeout(timeoutId);
                 navigator.geolocation.clearWatch(watchId);
                 resolve(position);

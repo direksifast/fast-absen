@@ -276,7 +276,7 @@ export function EmployeeView({
     ? "text-emerald-600"
     : "text-blue-600";
 
-  const isPastCheckOutLimit = todayRecord && !todayRecord.checkOut && !!todayRecord.checkIn && currentMinsTotal > endCheckOutMins;
+  const isPastCheckOutLimit = !employee.isFieldWorker && todayRecord && !todayRecord.checkOut && !!todayRecord.checkIn && currentMinsTotal > endCheckOutMins;
 
   const hasAutoAbsen = useRef(false);
   useEffect(() => {
@@ -287,8 +287,8 @@ export function EmployeeView({
     }
   }, [isPastCheckOutLimit, todayRecord]);
 
-  // Tombol scan hanya nyala untuk check-in atau saat waktu absen pulang sudah tiba (17:00 s/d 20:00)
-  const canScan = !todayRecord || (!todayRecord.checkOut && !!todayRecord.checkIn && currentMinsTotal >= startCheckOutMins && currentMinsTotal <= endCheckOutMins);
+  // Tombol scan hanya nyala untuk check-in atau saat waktu absen pulang sudah tiba (17:00 s/d 20:00), KECUALI untuk field worker yang bebas kapan saja
+  const canScan = !todayRecord || (!todayRecord.checkOut && !!todayRecord.checkIn && (employee.isFieldWorker || (currentMinsTotal >= startCheckOutMins && currentMinsTotal <= endCheckOutMins)));
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -383,7 +383,7 @@ export function EmployeeView({
 
             <BarcodeScanner onScan={(id, photo, loc) => onScanSuccess(id, "absen", photo, loc)} onRegisterFace={handleRegisterFace} disabled={!canScan} employees={employees} targetEmployeeId={employee.id} appSettings={appSettings} />
 
-            {!canScan && todayRecord && !todayRecord.checkOut && currentMinsTotal < startCheckOutMins && (
+            {!canScan && !employee.isFieldWorker && todayRecord && !todayRecord.checkOut && currentMinsTotal < startCheckOutMins && (
               <div className="flex items-center gap-2 bg-amber-50 text-amber-700 rounded-xl p-4 text-sm font-semibold my-4">
                 <AlertCircle className="w-5 h-5 shrink-0" />
                 Belum waktunya absen pulang. Absen pulang baru bisa dilakukan mulai pukul {isSaturday ? "12:00" : "17:00"}.
