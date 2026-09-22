@@ -12,7 +12,11 @@ export async function syncServerTime() {
 }
 
 export function getTodayStr() {
-  return getServerTime().toISOString().split("T")[0];
+  const d = getServerTime();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 // Simulasi Server Time
