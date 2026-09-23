@@ -225,6 +225,7 @@ export function EmployeeView({
 }) {
   const [tab, setTab] = useState<"scan" | "lembur" | "barcode" | "izin" | "riwayat" | "akun">("scan");
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [riwayatMonth, setRiwayatMonth] = useState(getTodayStr().substring(0, 7));
 
   const [oldPin, setOldPin] = useState("");
   const [newPin, setNewPin] = useState("");
@@ -528,16 +529,24 @@ export function EmployeeView({
 
         {tab === "riwayat" && (
           <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-border flex items-center gap-3">
-              <CalendarDays className="w-5 h-5 text-primary" />
-              <span className="font-semibold text-foreground">Riwayat Absensi</span>
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <CalendarDays className="w-5 h-5 text-primary" />
+                <span className="font-semibold text-foreground">Riwayat Absensi</span>
+              </div>
+              <input
+                type="month"
+                value={riwayatMonth}
+                onChange={(e) => setRiwayatMonth(e.target.value)}
+                className="px-3 py-1.5 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
+              />
             </div>
-            {attendance.filter((r) => r.employeeId === employee.id).length === 0 ? (
-              <p className="p-8 text-center text-sm text-muted-foreground">Belum ada data absensi</p>
+            {attendance.filter((r) => r.employeeId === employee.id && r.date.startsWith(riwayatMonth)).length === 0 ? (
+              <p className="p-8 text-center text-sm text-muted-foreground">Belum ada data absensi untuk bulan ini</p>
             ) : (
               <div className="divide-y divide-border">
                 {attendance
-                  .filter((r) => r.employeeId === employee.id)
+                  .filter((r) => r.employeeId === employee.id && r.date.startsWith(riwayatMonth))
                   .sort((a, b) => b.date.localeCompare(a.date))
                   .map((rec) => (
                     <div key={rec.id} className="px-6 py-3 flex items-center gap-3">
