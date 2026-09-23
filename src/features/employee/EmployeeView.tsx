@@ -547,13 +547,20 @@ export function EmployeeView({
                         <div className="text-xs text-muted-foreground font-mono mt-2 space-y-2">
                           {rec.checkIn && (
                             <div className="flex flex-col items-start gap-1">
-                              <span className="font-semibold text-foreground">Masuk {rec.checkIn}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-foreground">Masuk {rec.checkIn}</span>
+                                {rec.photoCheckIn && (
+                                  <a href={rec.photoCheckIn} target="_blank" rel="noreferrer" className="shrink-0">
+                                    <img src={rec.photoCheckIn} alt="Foto Masuk" className="w-8 h-8 object-cover rounded-md border border-border shadow-sm hover:opacity-80 transition-opacity" />
+                                  </a>
+                                )}
+                              </div>
                               {rec.locationCheckIn && (
                                 <a
                                   href={`https://maps.google.com/?q=${rec.locationCheckIn.lat},${rec.locationCheckIn.lng}`}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="inline-flex items-start gap-1.5 text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded-md hover:bg-blue-100 transition-colors w-full sm:w-auto"
+                                  className="inline-flex items-start gap-1.5 text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded-md hover:bg-blue-100 transition-colors w-full sm:w-auto mt-1"
                                 >
                                   <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                                   <span className="whitespace-normal leading-relaxed text-left">{rec.locationCheckIn.address || "Lihat di Peta"}</span>
@@ -563,13 +570,20 @@ export function EmployeeView({
                           )}
                           {rec.checkOut && (
                             <div className="flex flex-col items-start gap-1 mt-2">
-                              <span className="font-semibold text-foreground">Pulang {rec.checkOut}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-foreground">Pulang {rec.checkOut}</span>
+                                {rec.photoCheckOut && (
+                                  <a href={rec.photoCheckOut} target="_blank" rel="noreferrer" className="shrink-0">
+                                    <img src={rec.photoCheckOut} alt="Foto Pulang" className="w-8 h-8 object-cover rounded-md border border-border shadow-sm hover:opacity-80 transition-opacity" />
+                                  </a>
+                                )}
+                              </div>
                               {rec.locationCheckOut && (
                                 <a
                                   href={`https://maps.google.com/?q=${rec.locationCheckOut.lat},${rec.locationCheckOut.lng}`}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="inline-flex items-start gap-1.5 text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md hover:bg-emerald-100 transition-colors w-full sm:w-auto"
+                                  className="inline-flex items-start gap-1.5 text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md hover:bg-emerald-100 transition-colors w-full sm:w-auto mt-1"
                                 >
                                   <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                                   <span className="whitespace-normal leading-relaxed text-left">{rec.locationCheckOut.address || "Lihat di Peta"}</span>
