@@ -191,10 +191,10 @@ export function AdminView({
         <aside className="hidden md:flex flex-col w-64 bg-primary min-h-screen shrink-0">
           <div className="px-6 py-6">
             <div className="flex items-center gap-3 mb-1">
-              <ClipboardList className="w-6 h-6 text-white/80" />
-              <span className="font-bold text-white text-lg">FAST ABSEN</span>
+              <ClipboardList className="w-6 h-6 text-primary-foreground opacity-80" />
+              <span className="font-bold text-primary-foreground text-lg">FAST ABSEN</span>
             </div>
-            <p className="text-xs text-white/50 pl-9">Panel Admin</p>
+            <p className="text-xs text-primary-foreground opacity-70 pl-9">Panel Admin</p>
           </div>
           <nav className="flex-1 px-3 pb-4 space-y-1">
             {([
@@ -209,15 +209,15 @@ export function AdminView({
               <button
                 key={key}
                 onClick={() => setTab(key)}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${tab === key ? "bg-card text-primary" : "text-white/70 hover:bg-white/10 hover:text-white"}`}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${tab === key ? "bg-card text-primary" : "text-primary-foreground opacity-70 hover:bg-primary-foreground/10 hover:opacity-100"}`}
               >
                 <Icon className="w-4 h-4" /> {label}
               </button>
             ))}
           </nav>
           <div className="px-3 pb-6">
-            <div className="border-t border-white/10 pt-4">
-              <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white transition-all">
+            <div className="border-t border-primary-foreground/10 pt-4">
+              <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground opacity-70 hover:bg-primary-foreground/10 hover:opacity-100 transition-all">
                 <LogOut className="w-4 h-4" /> Keluar
               </button>
             </div>
@@ -226,12 +226,12 @@ export function AdminView({
 
         {/* Mobile header & Responsive Tab Navigation */}
         <div className="md:hidden w-full bg-background border-b border-border pb-3">
-          <header className="bg-primary text-white px-4 py-4 flex items-center justify-between shadow-sm">
+          <header className="bg-primary text-primary-foreground px-4 py-4 flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-white/90" />
+              <ClipboardList className="w-5 h-5 opacity-90" />
               <span className="font-bold text-base">FAST ABSEN Admin</span>
             </div>
-            <button onClick={onLogout} className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+            <button onClick={onLogout} className="px-3 py-1.5 rounded-xl bg-primary-foreground/10 hover:bg-primary-foreground/20 text-xs font-semibold flex items-center gap-1.5 transition-colors text-primary-foreground">
               <LogOut className="w-3.5 h-3.5" /> Keluar
             </button>
           </header>

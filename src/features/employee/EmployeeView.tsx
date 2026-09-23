@@ -295,41 +295,41 @@ export function EmployeeView({
       {/* Header */}
       <header className="bg-primary text-primary-foreground">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm">
+          <div className="w-10 h-10 rounded-full bg-primary-foreground/10 flex items-center justify-center font-bold text-sm text-primary-foreground">
             {employee.initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-sm truncate">{employee.name}</p>
-            <p className="text-xs text-primary-foreground/70">{employee.position} · {employee.department}</p>
+            <p className="font-bold text-sm truncate text-primary-foreground">{employee.name}</p>
+            <p className="text-xs text-primary-foreground/80">{employee.position} · {employee.department}</p>
           </div>
           <div className="text-right mr-2">
-            <p className="text-xs text-primary-foreground/70">Status</p>
-            <p className={`text-xs font-semibold ${scanLabelColor.replace("text-","text-white/")}`}>{scanLabel}</p>
+            <p className="text-xs text-primary-foreground/80">Status</p>
+            <p className={`text-xs font-bold ${!todayRecord ? "text-primary-foreground/50" : "text-primary-foreground"}`}>{scanLabel}</p>
           </div>
-          <button onClick={onLogout} className="p-2 rounded-xl hover:bg-white/10 transition-colors">
+          <button onClick={onLogout} className="p-2 rounded-xl hover:bg-primary-foreground/10 transition-colors text-primary-foreground">
             <LogOut className="w-4 h-4" />
           </button>
         </div>
 
         {/* Today Status Bar */}
         {todayRecord && (
-          <div className="border-t border-white/10 bg-white/5">
+          <div className="border-t border-primary-foreground/10 bg-primary-foreground/5 text-primary-foreground">
             <div className="max-w-2xl mx-auto px-4 py-2 flex gap-4 text-xs">
               <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-white/60" />
-                <span className="text-white/60">Masuk:</span>
-                <span className="font-mono font-semibold">{todayRecord.checkIn || "–"}</span>
+                <Clock className="w-3.5 h-3.5 text-primary-foreground/70" />
+                <span className="text-primary-foreground/80">Masuk:</span>
+                <span className="font-mono font-bold">{todayRecord.checkIn || "–"}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-white/60" />
-                <span className="text-white/60">Pulang:</span>
-                <span className="font-mono font-semibold">{todayRecord.checkOut || "–"}</span>
+                <Clock className="w-3.5 h-3.5 text-primary-foreground/70" />
+                <span className="text-primary-foreground/80">Pulang:</span>
+                <span className="font-mono font-bold">{todayRecord.checkOut || "–"}</span>
               </div>
               {todayRecord.lemburIn && (
-                <div className="flex items-center gap-1.5 text-orange-300">
-                  <Clock className="w-3.5 h-3.5 opacity-60" />
+                <div className="flex items-center gap-1.5 text-primary-foreground">
+                  <Clock className="w-3.5 h-3.5 opacity-70" />
                   <span className="opacity-80">Lembur:</span>
-                  <span className="font-mono font-semibold">{todayRecord.lemburIn} - {todayRecord.lemburOut || "–"}</span>
+                  <span className="font-mono font-bold">{todayRecord.lemburIn} - {todayRecord.lemburOut || "–"}</span>
                 </div>
               )}
               <div className="ml-auto">
