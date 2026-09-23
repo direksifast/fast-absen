@@ -1,25 +1,30 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import webpush from 'web-push';
 import { createClient } from '@supabase/supabase-js';
-import fs from 'fs';
-import path from 'path';
 
-// Fix ESM JSON import for Vercel Serverless Function
-const vapidPath = path.join(process.cwd(), 'src/utils/vapidKeys.json');
-const vapidKeys = JSON.parse(fs.readFileSync(vapidPath, 'utf8'));
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://cvrhmwqmprefrvzqlkvo.supabase.co';
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'sb_publishable_FR-_Sb7AYGLVl-dYm4p7Nw_igmF1ZsV';
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.error('[CronReminder] Missing Supabase environment variables');
+}
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = createClient(SUPABASE_URL || '', SUPABASE_KEY || '');
 
-// Configure Web Push with VAPID keys
+// Configure Web Push with VAPID keys from environment variables
 try {
-  webpush.setVapidDetails(
-    'mailto:admin@fastabsen.com',
-    vapidKeys.publicKey,
-    vapidKeys.privateKey
-  );
+  const publicKey = process.env.VAPID_PUBLIC_KEY;
+  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  
+  if (publicKey && privateKey) {
+    webpush.setVapidDetails(
+      'mailto:admin@fastabsen.com',
+      publicKey,
+      privateKey
+    );
+  } else {
+    console.error('[CronReminder] Missing VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY environment variables');
+  }
 } catch (e) {
   console.error('[CronReminder] Failed to set VAPID details:', e);
 }

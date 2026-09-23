@@ -1,4 +1,4 @@
-import vapidKeys from "./vapidKeys.json";
+const VAPID_PUBLIC_KEY = "BM3v8KRdvLkXHOB5sAi3-5qwnfTs-dLTM5GeGwVCVBwCkchVzhfproQ0jPNMivU-T9H7diDjMkV1ufqCGJpkiwE";
 import { supabase } from "../services/supabase";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -50,7 +50,7 @@ export async function registerPushNotification(employeeId?: string, forceRenew: 
     }
 
     if (!subscription) {
-      const convertedKey = urlBase64ToUint8Array(vapidKeys.publicKey);
+      const convertedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: convertedKey,
