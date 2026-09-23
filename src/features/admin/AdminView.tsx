@@ -88,7 +88,7 @@ export function AdminView({
     e.preventDefault();
     if (!newEmpId || !newEmpName || !newEmpRole) return;
     const initials = newEmpName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
-    const color = "#1B3E7A"; // Placeholder color
+    const color = "#FBBF24"; // Placeholder color
     onAddEmployee({ id: newEmpId, name: newEmpName, department: "Umum", position: newEmpRole, initials, color, isFieldWorker: newEmpIsField });
     setNewEmpId(""); setNewEmpName(""); setNewEmpRole(""); setNewEmpIsField(false);
   };

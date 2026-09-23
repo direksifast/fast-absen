@@ -150,7 +150,7 @@ function BarcodeDisplay({ employee }: { employee: Employee }) {
       <html><head><title>Barcode ${employee.id}</title>
       <style>
         body { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; }
-        .card { border: 2px solid #1B3E7A; border-radius: 12px; padding: 24px 32px; text-align: center; }
+        .card { border: 2px solid #1E2D4A; border-radius: 12px; padding: 24px 32px; text-align: center; }
         h2 { margin: 0 0 4px; font-size: 18px; color: #0D1B2A; }
         p { margin: 0 0 16px; font-size: 13px; color: #6B7A99; }
         img { max-width: 100%; }

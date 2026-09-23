@@ -51,42 +51,42 @@ class ErrorBoundary extends Component<Props, State> {
           justifyContent: "center",
           padding: "24px",
           fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
-          backgroundColor: "#F8FAFC",
-          color: "#0F172A",
+          backgroundColor: "#0a192f",
+          color: "#f8fafc",
           textAlign: "center"
         }}>
           <div style={{
             width: "64px",
             height: "64px",
             borderRadius: "20px",
-            backgroundColor: "#EFF6FF",
+            backgroundColor: "#112240",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             fontSize: "32px",
             marginBottom: "16px",
-            border: "1px solid #DBEAFE"
+            border: "1px solid #1e2d4a"
           }}>
             ⚡
           </div>
-          <h2 style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "8px", color: "#1E293B" }}>
+          <h2 style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "8px", color: "#f8fafc" }}>
             Aplikasi Perlu Disegarkan
           </h2>
-          <p style={{ fontSize: "13px", color: "#64748B", maxWidth: "340px", marginBottom: "24px", lineHeight: "1.5" }}>
+          <p style={{ fontSize: "13px", color: "#94a3b8", maxWidth: "340px", marginBottom: "24px", lineHeight: "1.5" }}>
             Terdapat penyesuaian cache versi di HP Anda. Silakan klik tombol di bawah untuk memuat ulang versi terbaru.
           </p>
           <button
             onClick={this.handleReset}
             style={{
-              backgroundColor: "#1B3E7A",
-              color: "#FFFFFF",
+              backgroundColor: "#fbbf24",
+              color: "#0a192f",
               border: "none",
               padding: "14px 28px",
               borderRadius: "14px",
               fontWeight: "bold",
               fontSize: "14px",
               cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(27, 62, 122, 0.25)"
+              boxShadow: "0 4px 12px rgba(251, 191, 36, 0.25)"
             }}
           >
             Segarkan & Muat Ulang 🔄

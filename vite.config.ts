@@ -40,8 +40,8 @@ export default defineConfig({
         name: 'FAST ABSEN',
         short_name: 'FAST ABSEN',
         description: 'Sistem Absensi Karyawan Tercepat',
-        theme_color: '#1B3E7A',
-        background_color: '#F8FAFC',
+        theme_color: '#0A192F',
+        background_color: '#0A192F',
         display: 'standalone',
         icons: [
           {

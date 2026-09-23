@@ -1,6 +1,6 @@
 import { Employee, AttendanceRecord, LeaveRequest, AttendanceStatus } from "../types";
 
-export const COLORS = ["#1B3E7A", "#0D8A6F", "#7C3AED", "#C8200E", "#D97706", "#0369A1", "#BE185D", "#065F46"];
+export const COLORS = ["#FBBF24", "#0D8A6F", "#7C3AED", "#C8200E", "#D97706", "#0369A1", "#BE185D", "#065F46"];
 
 export const INITIAL_EMPLOYEES: Employee[] = [
   { id: "EMP001", name: "Kenzo", department: "Engineering", position: "Backend Developer", initials: "BS", color: COLORS[0] },
