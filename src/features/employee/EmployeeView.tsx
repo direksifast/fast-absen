@@ -539,7 +539,6 @@ export function EmployeeView({
                 {attendance
                   .filter((r) => r.employeeId === employee.id)
                   .sort((a, b) => b.date.localeCompare(a.date))
-                  .slice(0, 20)
                   .map((rec) => (
                     <div key={rec.id} className="px-6 py-3 flex items-center gap-3">
                       <div className="flex-1">
